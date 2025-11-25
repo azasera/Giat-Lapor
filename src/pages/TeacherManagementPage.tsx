@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Users, Trash2, Plus, Download, FileSpreadsheet } from 'lucide-react';
+import { Upload, Users, Trash2, Plus, Download, FileSpreadsheet, Edit2 } from 'lucide-react';
 import { supabase } from '../services/supabaseService';
 import { showSuccess, showError, showLoading, dismissToast } from '../utils/toast';
 import * as XLSX from 'xlsx';
@@ -17,6 +17,9 @@ const TeacherManagementPage: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [newTeacherName, setNewTeacherName] = useState('');
   const [newTeacherInstitution, setNewTeacherInstitution] = useState('SDITA');
+  const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editInstitution, setEditInstitution] = useState('SDITA');
 
   useEffect(() => {
     loadTeachers();
@@ -152,6 +155,43 @@ const TeacherManagementPage: React.FC = () => {
     } catch (error) {
       console.error('Error deleting teacher:', error);
       showError('Gagal menghapus guru');
+    } finally {
+      dismissToast(loadingToastId);
+    }
+  };
+
+  const handleEditTeacher = (teacher: Teacher) => {
+    setEditingTeacher(teacher);
+    setEditName(teacher.name);
+    setEditInstitution(teacher.institution || 'SDITA');
+  };
+
+  const handleUpdateTeacher = async () => {
+    if (!editingTeacher || !editName.trim()) {
+      showError('Nama guru tidak boleh kosong');
+      return;
+    }
+
+    const loadingToastId = showLoading('Mengupdate guru...');
+    try {
+      const { error } = await supabase
+        .from('teachers')
+        .update({
+          name: editName.trim(),
+          institution: editInstitution
+        })
+        .eq('id', editingTeacher.id);
+
+      if (error) throw error;
+
+      await loadTeachers();
+      showSuccess('Guru berhasil diupdate!');
+      setEditingTeacher(null);
+      setEditName('');
+      setEditInstitution('SDITA');
+    } catch (error) {
+      console.error('Error updating teacher:', error);
+      showError('Gagal mengupdate guru');
     } finally {
       dismissToast(loadingToastId);
     }
@@ -322,18 +362,82 @@ const TeacherManagementPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <button
-                  onClick={() => handleDeleteTeacher(teacher.id, teacher.name)}
-                  className="text-red-600 hover:text-red-800 p-2"
-                  title="Hapus guru"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleEditTeacher(teacher)}
+                    className="text-blue-600 hover:text-blue-800 p-2"
+                    title="Edit guru"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteTeacher(teacher.id, teacher.name)}
+                    className="text-red-600 hover:text-red-800 p-2"
+                    title="Hapus guru"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Edit Modal */}
+      {editingTeacher && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold mb-4">Edit Guru</h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Nama Guru</label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full border rounded-lg px-3 py-2"
+                  placeholder="Nama guru..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Lembaga</label>
+                <select
+                  value={editInstitution}
+                  onChange={(e) => setEditInstitution(e.target.value)}
+                  className="w-full border rounded-lg px-3 py-2"
+                >
+                  <option value="SDITA">SDITA</option>
+                  <option value="SMPITA">SMPITA</option>
+                  <option value="SMAITA">SMAITA</option>
+                  <option value="MTA">MTA</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-2 justify-end mt-6">
+              <button
+                onClick={() => {
+                  setEditingTeacher(null);
+                  setEditName('');
+                  setEditInstitution('SDITA');
+                }}
+                className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleUpdateTeacher}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Simpan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
