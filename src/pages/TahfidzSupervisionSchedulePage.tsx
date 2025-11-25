@@ -166,8 +166,12 @@ const TahfidzSupervisionSchedulePage: React.FC = () => {
       const schedulesToCreate = [];
 
       // Create schedule for each teacher with interval
-      for (let i = 0; i < teachers.length; i++) {
-        const teacher = teachers[i];
+      const filteredTeachers = filterInstitution
+        ? teachers.filter(t => t.institution === filterInstitution)
+        : teachers;
+
+      for (let i = 0; i < filteredTeachers.length; i++) {
+        const teacher = filteredTeachers[i];
         const scheduleDate = new Date(startDate);
         scheduleDate.setDate(scheduleDate.getDate() + (i * bulkFormData.interval_days));
 
@@ -420,14 +424,36 @@ const TahfidzSupervisionSchedulePage: React.FC = () => {
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h3 className="font-semibold text-blue-900 mb-2">📋 Preview Jadwal</h3>
                 <p className="text-sm text-blue-800">
-                  {teachers.length} guru akan dijadwalkan mulai dari tanggal yang Anda pilih,
+                  {filterInstitution
+                    ? `${teachers.filter(t => t.institution === filterInstitution).length} guru dari ${filterInstitution}`
+                    : `${teachers.length} guru dari semua lembaga`} akan dijadwalkan mulai dari tanggal yang Anda pilih,
                   dengan interval {bulkFormData.interval_days} hari antar guru.
                 </p>
                 {bulkFormData.start_date && (
                   <p className="text-sm text-blue-800 mt-2">
-                    Jadwal terakhir: {new Date(new Date(bulkFormData.start_date).getTime() + ((teachers.length - 1) * bulkFormData.interval_days * 24 * 60 * 60 * 1000)).toLocaleDateString('id-ID')}
+                    Jadwal terakhir: {new Date(new Date(bulkFormData.start_date).getTime() + (((filterInstitution ? teachers.filter(t => t.institution === filterInstitution).length : teachers.length) - 1) * bulkFormData.interval_days * 24 * 60 * 60 * 1000)).toLocaleDateString('id-ID')}
                   </p>
                 )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Filter Lembaga</label>
+                <select
+                  value={filterInstitution}
+                  onChange={(e) => setFilterInstitution(e.target.value)}
+                  className="w-full border rounded-lg px-3 py-2 bg-gray-50"
+                >
+                  <option value="">Semua Lembaga</option>
+                  <option value="SDITA">SDITA</option>
+                  <option value="SMPITA">SMPITA</option>
+                  <option value="SMAITA">SMAITA</option>
+                  <option value="MTA">MTA</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {filterInstitution
+                    ? `Hanya guru dari ${filterInstitution} yang akan dijadwalkan`
+                    : 'Semua guru dari semua lembaga akan dijadwalkan'}
+                </p>
               </div>
 
               <div>
