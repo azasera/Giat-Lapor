@@ -1,6 +1,6 @@
 import React, { useRef, useCallback, useState, forwardRef, useImperativeHandle } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
-import { Eraser, Check } from 'lucide-react';
+import { Eraser, Check, Upload, Pencil } from 'lucide-react';
 
 interface SignaturePadProps {
   width?: number;
@@ -34,6 +34,9 @@ const SignaturePad = forwardRef((props: SignaturePadProps, ref: React.Ref<Signat
 
   const sigCanvas = useRef<SignatureCanvas | null>(null);
   const [hasDrawn, setHasDrawn] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [mode, setMode] = useState<'draw' | 'upload'>('draw');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Expose internal functions via ref
   useImperativeHandle(ref, () => ({
@@ -77,19 +80,63 @@ const SignaturePad = forwardRef((props: SignaturePadProps, ref: React.Ref<Signat
     }
   }, [onSave]);
 
+  const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Mohon upload file gambar (PNG, JPG, etc.)');
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Ukuran file terlalu besar. Maksimal 2MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      setUploadedImage(dataUrl);
+      setHasDrawn(true);
+      onSave?.(dataUrl);
+    };
+    reader.readAsDataURL(file);
+  }, [onSave]);
+
   return (
-    <div className={`border border-gray-300 dark:border-gray-600 rounded-md overflow-hidden ${className}`}>
-      <div className="relative" style={{ width: width, height: height }}>
+    <div className={`border border-gray-300 dark:border-gray-600 rounded-md ${className}`} style={{ width: width, height: height + 40 }}>
+      <div style={{ width: width, height: height, position: 'relative' }}>
         {readOnly && initialSignature ? (
-          // Display saved signature as an image, centered
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-700">
-            <img src={initialSignature} alt="Tanda Tangan" className="max-w-full max-h-full object-contain" />
-          </div>
+          // Display saved signature as an image - exact canvas size
+          <img
+            src={initialSignature}
+            alt="Tanda Tangan"
+            style={{
+              width: `${width}px`,
+              height: `${height}px`,
+              display: 'block'
+            }}
+          />
         ) : readOnly && !initialSignature ? (
           // Display "Tidak ada tanda tangan" when readOnly and no signature
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-700 bg-opacity-70 text-gray-500 dark:text-gray-400 text-sm">
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-sm">
             Tidak ada tanda tangan
           </div>
+        ) : uploadedImage ? (
+          // Display uploaded image
+          <img
+            src={uploadedImage}
+            alt="Tanda Tangan"
+            style={{
+              width: `${width}px`,
+              height: `${height}px`,
+              display: 'block',
+              objectFit: 'contain'
+            }}
+          />
         ) : (
           // Render interactive SignatureCanvas for drawing/editing
           <SignatureCanvas
@@ -98,39 +145,70 @@ const SignaturePad = forwardRef((props: SignaturePadProps, ref: React.Ref<Signat
               width: width,
               height: height,
               className: 'signature-canvas',
-              style: { backgroundColor: backgroundColor, touchAction: 'none' }
+              style: {
+                backgroundColor: backgroundColor,
+                touchAction: 'none',
+                display: 'block'
+              }
             }}
             penColor={penColor}
             onEnd={handleEnd}
-            minWidth={0.5} // Dikembalikan ke 0.5 untuk isolasi masalah
-            maxWidth={2}
-            dotSize={0.5} // Dikembalikan ke 0.5 untuk isolasi masalah
-            velocityFilterWeight={0.9}
+            minWidth={1}
+            maxWidth={3.5}
+            dotSize={1.5}
+            velocityFilterWeight={0.7}
           />
         )}
       </div>
       {!readOnly && (
-        <div className="flex justify-end p-2 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 rounded-b-md">
-          <button
-            type="button"
-            onClick={handleClear}
-            className="p-1 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-md transition-colors"
-            title="Hapus Tanda Tangan"
-          >
-            <Eraser className="w-4 h-4" />
-          </button>
-          {hasDrawn && (
+        <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
+          <div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded shadow-md transition-colors flex items-center gap-1"
+              title="Upload Gambar Tanda Tangan"
+            >
+              <Upload className="w-3 h-3" />
+              Upload
+            </button>
+          </div>
+          <div className="flex gap-2">
             <button
               type="button"
               onClick={() => {
-                onSave?.(sigCanvas.current?.toDataURL('image/png') || '');
+                handleClear();
+                setUploadedImage(null);
               }}
-              className="ml-2 p-1 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-md transition-colors"
-              title="Konfirmasi Tanda Tangan"
+              className="p-1 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-md transition-colors"
+              title="Hapus Tanda Tangan"
             >
-              <Check className="w-4 h-4" />
+              <Eraser className="w-4 h-4" />
             </button>
-          )}
+            {hasDrawn && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (uploadedImage) {
+                    onSave?.(uploadedImage);
+                  } else {
+                    onSave?.(sigCanvas.current?.toDataURL('image/png') || '');
+                  }
+                }}
+                className="p-1 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-md transition-colors"
+                title="Konfirmasi Tanda Tangan"
+              >
+                <Check className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
