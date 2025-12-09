@@ -1039,6 +1039,26 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
         <div className="mt-12 p-6 bg-gray-50 dark:bg-gray-700 rounded-lg shadow-inner border border-gray-200 dark:border-gray-600">
           <h3 className="text-lg font-bold mb-4 text-amber-600 dark:text-amber-400">Tinjauan Yayasan</h3>
           
+          {/* Download Buttons for Foundation */}
+          <div className="mb-6 flex flex-wrap gap-3">
+            <button
+              onClick={handleDownloadPDF}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center space-x-2"
+              title="Download PDF"
+            >
+              <FileText className="w-4 h-4" />
+              <span>Download PDF</span>
+            </button>
+            <button
+              onClick={handleDownloadExcel}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center space-x-2"
+              title="Download Excel"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              <span>Download Excel</span>
+            </button>
+          </div>
+
           <div className="mb-4">
             <label htmlFor="reviewComment" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Catatan
