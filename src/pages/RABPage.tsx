@@ -522,17 +522,17 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
         .forEach(item => {
           infoData.push([
             item.description,
-            item.volume,
+            item.volume.toString(),
             item.unit,
-            item.unitPrice,
-            item.amount,
+            item.unitPrice.toString(),
+            item.amount.toString(),
             item.sourceOfFund,
             item.estimatedWeek
           ]);
         });
       
       infoData.push([]);
-      infoData.push(['Sub Total Belanja Rutin', '', '', '', totalRoutineExpenses]);
+      infoData.push(['Sub Total Belanja Rutin', '', '', '', totalRoutineExpenses.toString()]);
       infoData.push([]);
       
       // Belanja Insidentil
@@ -544,19 +544,19 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
         .forEach(item => {
           infoData.push([
             item.description,
-            item.volume,
+            item.volume.toString(),
             item.unit,
-            item.unitPrice,
-            item.amount,
+            item.unitPrice.toString(),
+            item.amount.toString(),
             item.sourceOfFund,
             item.estimatedWeek
           ]);
         });
       
       infoData.push([]);
-      infoData.push(['Sub Total Belanja Insidentil', '', '', '', totalIncidentalExpenses]);
+      infoData.push(['Sub Total Belanja Insidentil', '', '', '', totalIncidentalExpenses.toString()]);
       infoData.push([]);
-      infoData.push(['TOTAL ANGGARAN', '', '', '', totalRoutineExpenses + totalIncidentalExpenses]);
+      infoData.push(['TOTAL ANGGARAN', '', '', '', (totalRoutineExpenses + totalIncidentalExpenses).toString()]);
       
       // Create worksheet
       const ws = XLSX.utils.aoa_to_sheet(infoData);
