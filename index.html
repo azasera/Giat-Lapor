@@ -6,14 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Lapor Giat - Sistem Pelaporan Kegiatan</title>
     <meta name="description" content="Lapor Giat - Aplikasi web modern untuk dokumentasi dan pelaporan kegiatan dengan nilai-nilai Islam" />
-    <!-- Content Security Policy untuk mengizinkan Google API dan Supabase -->
+    <!-- Content Security Policy untuk mengizinkan Google API, Supabase, dan Vercel -->
     <meta http-equiv="Content-Security-Policy" content="
       default-src 'self';
-      script-src 'self' https://apis.google.com https://www.gstatic.com https://accounts.google.com https://accounts.google.com/gsi/client 'unsafe-inline' 'unsafe-eval';
+      script-src 'self' https://apis.google.com https://www.gstatic.com https://accounts.google.com https://accounts.google.com/gsi/client https://vercel.live https://*.vercel.live 'unsafe-inline' 'unsafe-eval';
       style-src 'self' 'unsafe-inline';
       img-src 'self' data: https://www.gstatic.com;
-      connect-src 'self' https://accounts.google.com https://www.googleapis.com https://oauth2.googleapis.com https://eyubefxeblzvavriltao.supabase.co wss://eyubefxeblzvavriltao.supabase.co https://*.google.com https://*.googleapis.com https://content.googleapis.com https://content-sheets.googleapis.com https://content-people.googleapis.com https://api.openai.com;
-      frame-src 'self' https://accounts.google.com https://content.googleapis.com https://content-sheets.googleapis.com https://content-people.googleapis.com https://*.google.com;
+      connect-src 'self' https://accounts.google.com https://www.googleapis.com https://oauth2.googleapis.com https://eyubefxeblzvavriltao.supabase.co wss://eyubefxeblzvavriltao.supabase.co https://*.google.com https://*.googleapis.com https://content.googleapis.com https://content-sheets.googleapis.com https://content-people.googleapis.com https://api.openai.com https://vercel.live https://*.vercel.live wss://*.vercel.live;
+      frame-src 'self' https://accounts.google.com https://content.googleapis.com https://content-sheets.googleapis.com https://content-people.googleapis.com https://*.google.com https://vercel.live https://*.vercel.live;
     ">
   </head>
   <body>
