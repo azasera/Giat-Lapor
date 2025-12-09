@@ -487,21 +487,30 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
       // Add signatures section
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
-      doc.text('Pangkalpinang, 25 Juli 2025', doc.internal.pageSize.getWidth() / 2, yPos, { align: 'center' });
+      const currentDate = new Date().toLocaleDateString('id-ID', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      doc.text(`Pangkalpinang, ${currentDate}`, doc.internal.pageSize.getWidth() / 2, yPos, { align: 'center' });
       yPos += 10;
       
       // Check if we need a new page for signatures
-      if (yPos > 220) {
+      if (yPos > 200) {
         doc.addPage();
         yPos = 20;
+        doc.text(`Pangkalpinang, ${currentDate}`, doc.internal.pageSize.getWidth() / 2, yPos, { align: 'center' });
+        yPos += 10;
       }
       
       // Signature positions (5 signatures in a row)
       const pageWidth = doc.internal.pageSize.getWidth();
-      const sigWidth = 35;
-      const sigHeight = 20;
-      const spacing = (pageWidth - 20) / 5; // 5 signatures with margins
-      const startX = 10;
+      const sigWidth = 30;
+      const sigHeight = 18;
+      const totalMargin = 14; // Left and right margins
+      const availableWidth = pageWidth - (totalMargin * 2);
+      const spacing = availableWidth / 5; // 5 signatures
+      const startX = totalMargin;
       
       const signatures = [
         { data: rabData.signatureKabidUmum, name: 'Novan Herwando, S.E.', title: 'Kabid Umum' },
@@ -512,7 +521,7 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
       ];
       
       signatures.forEach((sig, index) => {
-        const xPos = startX + (index * spacing);
+        const xPos = startX + (index * spacing) + (spacing - sigWidth) / 2;
         
         // Add signature image if available
         if (sig.data) {
@@ -521,14 +530,32 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
           } catch (error) {
             console.error('Error adding signature image:', error);
           }
+        } else {
+          // Draw a placeholder box if no signature
+          doc.setDrawColor(200, 200, 200);
+          doc.rect(xPos, yPos, sigWidth, sigHeight);
         }
         
-        // Add name and title
-        doc.setFontSize(8);
+        // Add name and title below signature
+        const centerX = xPos + (sigWidth / 2);
+        doc.setFontSize(7);
         doc.setFont('helvetica', 'bold');
-        doc.text(sig.name, xPos + (sigWidth / 2), yPos + sigHeight + 5, { align: 'center', maxWidth: sigWidth });
+        
+        // Split long names into multiple lines if needed
+        const nameLines = doc.splitTextToSize(sig.name, sigWidth);
+        let nameYPos = yPos + sigHeight + 4;
+        nameLines.forEach((line: string) => {
+          doc.text(line, centerX, nameYPos, { align: 'center' });
+          nameYPos += 3;
+        });
+        
         doc.setFont('helvetica', 'normal');
-        doc.text(sig.title, xPos + (sigWidth / 2), yPos + sigHeight + 10, { align: 'center', maxWidth: sigWidth });
+        doc.setFontSize(6.5);
+        const titleLines = doc.splitTextToSize(sig.title, sigWidth);
+        titleLines.forEach((line: string) => {
+          doc.text(line, centerX, nameYPos, { align: 'center' });
+          nameYPos += 3;
+        });
       });
       
       // Save PDF
