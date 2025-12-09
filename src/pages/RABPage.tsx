@@ -520,6 +520,14 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
         { data: rabData.signatureKepalaMTA, name: 'Azali Abdul Ghani', title: 'Kepala MTA' }
       ];
       
+      console.log('Signature data check:', {
+        kabidUmum: !!rabData.signatureKabidUmum,
+        bendahara: !!rabData.signatureBendaharaYayasan,
+        sekretaris: !!rabData.signatureSekretarisYayasan,
+        ketua: !!rabData.signatureKetuaYayasan,
+        kepalaMTA: !!rabData.signatureKepalaMTA
+      });
+      
       signatures.forEach((sig, index) => {
         const xPos = startX + (index * spacing) + (spacing - sigWidth) / 2;
         
@@ -527,12 +535,19 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
         if (sig.data) {
           try {
             doc.addImage(sig.data, 'PNG', xPos, yPos, sigWidth, sigHeight);
+            console.log(`Signature ${index + 1} (${sig.title}) added successfully`);
           } catch (error) {
-            console.error('Error adding signature image:', error);
+            console.error(`Error adding signature ${index + 1} (${sig.title}):`, error);
+            // Draw placeholder box on error
+            doc.setDrawColor(200, 200, 200);
+            doc.setLineWidth(0.5);
+            doc.rect(xPos, yPos, sigWidth, sigHeight);
           }
         } else {
           // Draw a placeholder box if no signature
+          console.log(`No signature data for ${sig.title}, drawing placeholder`);
           doc.setDrawColor(200, 200, 200);
+          doc.setLineWidth(0.5);
           doc.rect(xPos, yPos, sigWidth, sigHeight);
         }
         
