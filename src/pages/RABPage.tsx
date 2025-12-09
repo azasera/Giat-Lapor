@@ -2,11 +2,14 @@ import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import OptimizedInput from '../components/OptimizedInput';
 import OptimizedSelect from '../components/OptimizedSelect';
 import { RABData, defaultRABData, ExpenseItem, sourceOfFundOptions, unitTypeOptions, weekNumberOptions, SourceOfFund, UnitType, WeekNumber } from '../types/rab';
-import { Plus, Trash2, Save, ArrowLeft, CheckCircle, Send, XCircle, Check, Eye } from 'lucide-react'; // Added XCircle, Check, Eye icons
+import { Plus, Trash2, Save, ArrowLeft, CheckCircle, Send, XCircle, Check, Eye, Download, FileText, FileSpreadsheet } from 'lucide-react'; // Added Download, FileText, FileSpreadsheet icons
 import { useNavigate } from 'react-router-dom';
 import { supabase, fetchRABs, saveRABToSupabase, deleteRABFromSupabase, submitRABToFoundation, approveRAB, rejectRAB } from '../services/supabaseService'; // Import approveRAB, rejectRAB
 import SignaturePad, { SignaturePadRef } from '../components/SignaturePad'; // Import SignaturePad and its ref type
 import { showSuccess, showError, showLoading, dismissToast } from '../utils/toast'; // Import toast utilities
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 interface RABPageProps {
   initialRABId?: string;
@@ -363,6 +366,252 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
     }
   }, [rabData, reviewComment, onRABSaved]);
 
+  const handleDownloadPDF = useCallback(() => {
+    const loadingToastId = showLoading('Membuat PDF...');
+    try {
+      const doc = new jsPDF();
+      
+      // Title
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text('RENCANA ANGGARAN BELANJA', doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
+      
+      // Institution Info
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Nama Lembaga: ${rabData.institutionName}`, 14, 25);
+      doc.text(`Periode: ${rabData.period}`, 14, 30);
+      doc.text(`Tahun: ${rabData.year}`, 14, 35);
+      
+      // Status
+      doc.text(`Status: ${rabData.status === 'submitted' ? 'Dikirim' : rabData.status === 'approved' ? 'Disetujui' : rabData.status === 'rejected' ? 'Ditolak' : 'Draft'}`, 14, 40);
+      
+      let yPos = 50;
+      
+      // Belanja Rutin
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('A. Belanja Rutin', 14, yPos);
+      yPos += 5;
+      
+      const routineData = rabData.routineExpenses
+        .filter(item => item.description.trim() !== '')
+        .map(item => [
+          item.description,
+          item.volume.toString(),
+          item.unit,
+          `Rp ${item.unitPrice.toLocaleString('id-ID')}`,
+          `Rp ${item.amount.toLocaleString('id-ID')}`,
+          item.sourceOfFund,
+          item.estimatedWeek
+        ]);
+      
+      if (routineData.length > 0) {
+        autoTable(doc, {
+          startY: yPos,
+          head: [['Uraian', 'Volume', 'Satuan', 'Harga Satuan', 'Jumlah', 'Sumber Dana', 'Waktu']],
+          body: routineData,
+          theme: 'grid',
+          styles: { fontSize: 8, cellPadding: 2 },
+          headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: 'bold' },
+          columnStyles: {
+            0: { cellWidth: 40 },
+            1: { cellWidth: 15 },
+            2: { cellWidth: 20 },
+            3: { cellWidth: 25 },
+            4: { cellWidth: 25 },
+            5: { cellWidth: 20 },
+            6: { cellWidth: 20 }
+          }
+        });
+        
+        yPos = (doc as any).lastAutoTable.finalY + 5;
+      }
+      
+      // Sub Total Rutin
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Sub Total Belanja Rutin: Rp ${totalRoutineExpenses.toLocaleString('id-ID')}`, 14, yPos);
+      yPos += 10;
+      
+      // Belanja Insidentil
+      doc.setFontSize(12);
+      doc.text('B. Belanja Insidentil', 14, yPos);
+      yPos += 5;
+      
+      const incidentalData = rabData.incidentalExpenses
+        .filter(item => item.description.trim() !== '')
+        .map(item => [
+          item.description,
+          item.volume.toString(),
+          item.unit,
+          `Rp ${item.unitPrice.toLocaleString('id-ID')}`,
+          `Rp ${item.amount.toLocaleString('id-ID')}`,
+          item.sourceOfFund,
+          item.estimatedWeek
+        ]);
+      
+      if (incidentalData.length > 0) {
+        autoTable(doc, {
+          startY: yPos,
+          head: [['Uraian', 'Volume', 'Satuan', 'Harga Satuan', 'Jumlah', 'Sumber Dana', 'Waktu']],
+          body: incidentalData,
+          theme: 'grid',
+          styles: { fontSize: 8, cellPadding: 2 },
+          headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: 'bold' },
+          columnStyles: {
+            0: { cellWidth: 40 },
+            1: { cellWidth: 15 },
+            2: { cellWidth: 20 },
+            3: { cellWidth: 25 },
+            4: { cellWidth: 25 },
+            5: { cellWidth: 20 },
+            6: { cellWidth: 20 }
+          }
+        });
+        
+        yPos = (doc as any).lastAutoTable.finalY + 5;
+      }
+      
+      // Sub Total Insidentil
+      doc.setFontSize(10);
+      doc.text(`Sub Total Belanja Insidentil: Rp ${totalIncidentalExpenses.toLocaleString('id-ID')}`, 14, yPos);
+      yPos += 5;
+      
+      // Grand Total
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text(`TOTAL ANGGARAN: Rp ${(totalRoutineExpenses + totalIncidentalExpenses).toLocaleString('id-ID')}`, 14, yPos);
+      
+      // Save PDF
+      const fileName = `RAB_${rabData.institutionName}_${rabData.period}_${rabData.year}.pdf`;
+      doc.save(fileName);
+      
+      dismissToast(loadingToastId);
+      showSuccess('PDF berhasil diunduh!');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      dismissToast(loadingToastId);
+      showError('Gagal membuat PDF. Silakan coba lagi.');
+    }
+  }, [rabData, totalRoutineExpenses, totalIncidentalExpenses]);
+
+  const handleDownloadExcel = useCallback(() => {
+    const loadingToastId = showLoading('Membuat Excel...');
+    try {
+      // Create workbook
+      const wb = XLSX.utils.book_new();
+      
+      // Info Sheet
+      const infoData = [
+        ['RENCANA ANGGARAN BELANJA'],
+        [],
+        ['Nama Lembaga', rabData.institutionName],
+        ['Periode', rabData.period],
+        ['Tahun', rabData.year],
+        ['Status', rabData.status === 'submitted' ? 'Dikirim' : rabData.status === 'approved' ? 'Disetujui' : rabData.status === 'rejected' ? 'Ditolak' : 'Draft'],
+        []
+      ];
+      
+      // Belanja Rutin
+      infoData.push(['A. BELANJA RUTIN']);
+      infoData.push(['Uraian Kegiatan', 'Volume', 'Satuan', 'Harga Satuan', 'Jumlah', 'Sumber Dana', 'Perkiraan Waktu Belanja']);
+      
+      rabData.routineExpenses
+        .filter(item => item.description.trim() !== '')
+        .forEach(item => {
+          infoData.push([
+            item.description,
+            item.volume,
+            item.unit,
+            item.unitPrice,
+            item.amount,
+            item.sourceOfFund,
+            item.estimatedWeek
+          ]);
+        });
+      
+      infoData.push([]);
+      infoData.push(['Sub Total Belanja Rutin', '', '', '', totalRoutineExpenses]);
+      infoData.push([]);
+      
+      // Belanja Insidentil
+      infoData.push(['B. BELANJA INSIDENTIL']);
+      infoData.push(['Uraian Kegiatan', 'Volume', 'Satuan', 'Harga Satuan', 'Jumlah', 'Sumber Dana', 'Perkiraan Waktu Belanja']);
+      
+      rabData.incidentalExpenses
+        .filter(item => item.description.trim() !== '')
+        .forEach(item => {
+          infoData.push([
+            item.description,
+            item.volume,
+            item.unit,
+            item.unitPrice,
+            item.amount,
+            item.sourceOfFund,
+            item.estimatedWeek
+          ]);
+        });
+      
+      infoData.push([]);
+      infoData.push(['Sub Total Belanja Insidentil', '', '', '', totalIncidentalExpenses]);
+      infoData.push([]);
+      infoData.push(['TOTAL ANGGARAN', '', '', '', totalRoutineExpenses + totalIncidentalExpenses]);
+      
+      // Create worksheet
+      const ws = XLSX.utils.aoa_to_sheet(infoData);
+      
+      // Set column widths
+      ws['!cols'] = [
+        { wch: 40 }, // Uraian
+        { wch: 10 }, // Volume
+        { wch: 15 }, // Satuan
+        { wch: 15 }, // Harga Satuan
+        { wch: 15 }, // Jumlah
+        { wch: 15 }, // Sumber Dana
+        { wch: 20 }  // Waktu
+      ];
+      
+      // Add worksheet to workbook
+      XLSX.utils.book_append_sheet(wb, ws, 'RAB');
+      
+      // Weekly Summary Sheet
+      const summaryData = [
+        ['RINGKASAN KEBUTUHAN DANA PER PEKAN'],
+        [],
+        ['Sumber Dana', 'Pekan 1', 'Pekan 2', 'Pekan 3', 'Pekan 4', 'Pekan 5'],
+        ['Yayasan', ...weeklySummary.yayasan],
+        ['Bos', ...weeklySummary.bos],
+        ['Komite', ...weeklySummary.komite],
+        ['Donasi', ...weeklySummary.donasi],
+        ['Jumlah', ...weeklySummary.total]
+      ];
+      
+      const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+      wsSummary['!cols'] = [
+        { wch: 15 },
+        { wch: 15 },
+        { wch: 15 },
+        { wch: 15 },
+        { wch: 15 },
+        { wch: 15 }
+      ];
+      
+      XLSX.utils.book_append_sheet(wb, wsSummary, 'Ringkasan Mingguan');
+      
+      // Save file
+      const fileName = `RAB_${rabData.institutionName}_${rabData.period}_${rabData.year}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+      
+      dismissToast(loadingToastId);
+      showSuccess('Excel berhasil diunduh!');
+    } catch (error) {
+      console.error('Error generating Excel:', error);
+      dismissToast(loadingToastId);
+      showError('Gagal membuat Excel. Silakan coba lagi.');
+    }
+  }, [rabData, totalRoutineExpenses, totalIncidentalExpenses, weeklySummary]);
+
   const renderExpenseTable = (expenses: ExpenseItem[], type: 'routine' | 'incidental') => (
     <div className="overflow-x-auto mb-4">
       <table className="w-full border-collapse">
@@ -498,7 +747,24 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
         <h1 className="text-2xl font-bold text-center text-emerald-700 dark:text-emerald-400 flex-grow">
           RENCANA ANGGARAN BELANJA
         </h1>
-        <div className="w-24"></div> {/* Placeholder for alignment */}
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={handleDownloadPDF}
+            className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center space-x-2"
+            title="Download PDF"
+          >
+            <FileText className="w-4 h-4" />
+            <span className="hidden sm:inline">PDF</span>
+          </button>
+          <button
+            onClick={handleDownloadExcel}
+            className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center space-x-2"
+            title="Download Excel"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            <span className="hidden sm:inline">Excel</span>
+          </button>
+        </div>
       </div>
 
       {/* RAB Status Display */}
