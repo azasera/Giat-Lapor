@@ -482,6 +482,54 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(12);
       doc.text(`TOTAL ANGGARAN: Rp ${(totalRoutineExpenses + totalIncidentalExpenses).toLocaleString('id-ID')}`, 14, yPos);
+      yPos += 15;
+      
+      // Add signatures section
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Pangkalpinang, 25 Juli 2025', doc.internal.pageSize.getWidth() / 2, yPos, { align: 'center' });
+      yPos += 10;
+      
+      // Check if we need a new page for signatures
+      if (yPos > 220) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      // Signature positions (5 signatures in a row)
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const sigWidth = 35;
+      const sigHeight = 20;
+      const spacing = (pageWidth - 20) / 5; // 5 signatures with margins
+      const startX = 10;
+      
+      const signatures = [
+        { data: rabData.signatureKabidUmum, name: 'Novan Herwando, S.E.', title: 'Kabid Umum' },
+        { data: rabData.signatureBendaharaYayasan, name: 'Ikhwan Fadhillah, S.E.', title: 'Bendahara Yayasan' },
+        { data: rabData.signatureSekretarisYayasan, name: 'Fathurrohman, S.E.', title: 'Sekretaris Yayasan' },
+        { data: rabData.signatureKetuaYayasan, name: 'Ustadz Ali Agustian Bahri, Lc.', title: 'Ketua Yayasan' },
+        { data: rabData.signatureKepalaMTA, name: 'Azali Abdul Ghani', title: 'Kepala MTA' }
+      ];
+      
+      signatures.forEach((sig, index) => {
+        const xPos = startX + (index * spacing);
+        
+        // Add signature image if available
+        if (sig.data) {
+          try {
+            doc.addImage(sig.data, 'PNG', xPos, yPos, sigWidth, sigHeight);
+          } catch (error) {
+            console.error('Error adding signature image:', error);
+          }
+        }
+        
+        // Add name and title
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.text(sig.name, xPos + (sigWidth / 2), yPos + sigHeight + 5, { align: 'center', maxWidth: sigWidth });
+        doc.setFont('helvetica', 'normal');
+        doc.text(sig.title, xPos + (sigWidth / 2), yPos + sigHeight + 10, { align: 'center', maxWidth: sigWidth });
+      });
       
       // Save PDF
       const fileName = `RAB_${rabData.institutionName}_${rabData.period}_${rabData.year}.pdf`;

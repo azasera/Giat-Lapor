@@ -14,6 +14,9 @@ export interface ReportData {
   foundationComment?: string; // Menambahkan kolom komentar dari yayasan
   submittedAt?: string;
   status: 'draft' | 'submitted' | 'approved';
+  // Tanda tangan
+  signaturePrincipal?: string | null; // Tanda tangan kepala sekolah (base64)
+  signatureFoundation?: string | null; // Tanda tangan yayasan (base64)
 }
 
 export interface Activity {

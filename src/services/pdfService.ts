@@ -268,6 +268,9 @@ export class PdfService {
       );
     }
 
+    // Add signatures
+    this.addSignatures(report);
+
     // Add footer
     this.addFooter();
   }
@@ -307,6 +310,60 @@ export class PdfService {
       grouped[item.bidang][item.kategori].push(item);
     });
     return grouped;
+  }
+
+  private addSignatures(report: ReportData): void {
+    this.checkPageBreak(60);
+
+    // Add date and location
+    this.doc.setFontSize(10);
+    this.doc.setFont('helvetica', 'normal');
+    const currentDate = new Date().toLocaleDateString('id-ID', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    this.doc.text(`Pangkalpinang, ${currentDate}`, this.pageWidth / 2, this.currentY, { align: 'center' });
+    this.currentY += 10;
+
+    // Signature section
+    const sigWidth = 40;
+    const sigHeight = 25;
+    const leftX = this.margin + 20;
+    const rightX = this.pageWidth - this.margin - sigWidth - 20;
+
+    // Principal signature (left)
+    this.doc.setFontSize(9);
+    this.doc.setFont('helvetica', 'normal');
+    this.doc.text('Kepala Sekolah,', leftX + (sigWidth / 2), this.currentY, { align: 'center' });
+    
+    if (report.signaturePrincipal) {
+      try {
+        this.doc.addImage(report.signaturePrincipal, 'PNG', leftX, this.currentY + 3, sigWidth, sigHeight);
+      } catch (error) {
+        console.error('Error adding principal signature:', error);
+      }
+    }
+    
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.text(report.principalName, leftX + (sigWidth / 2), this.currentY + sigHeight + 8, { align: 'center' });
+
+    // Foundation signature (right)
+    this.doc.setFont('helvetica', 'normal');
+    this.doc.text('Yayasan,', rightX + (sigWidth / 2), this.currentY, { align: 'center' });
+    
+    if (report.signatureFoundation) {
+      try {
+        this.doc.addImage(report.signatureFoundation, 'PNG', rightX, this.currentY + 3, sigWidth, sigHeight);
+      } catch (error) {
+        console.error('Error adding foundation signature:', error);
+      }
+    }
+    
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.text('Pihak Yayasan', rightX + (sigWidth / 2), this.currentY + sigHeight + 8, { align: 'center' });
+
+    this.currentY += sigHeight + 15;
   }
 
   private addFooter(): void {
