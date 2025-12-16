@@ -551,9 +551,12 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
       yPos += 10;
       
       // Add signatures section
+      console.log('🔥 STARTING SIGNATURE SECTION - Y Position:', yPos);
+      
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
       doc.text('TANDA TANGAN', doc.internal.pageSize.getWidth() / 2, yPos, { align: 'center' });
+      console.log('✅ Added TANDA TANGAN header at Y:', yPos);
       yPos += 8;
       
       doc.setFontSize(10);
@@ -594,6 +597,19 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
       console.log('=== SIGNATURE SECTION START ===');
       console.log('Current Y position before signatures:', yPos);
       console.log('Page dimensions:', { width: pageWidth, height: doc.internal.pageSize.getHeight() });
+      
+      // FORCE DRAW A TEST BOX TO ENSURE THIS SECTION IS EXECUTED
+      doc.setDrawColor(255, 0, 0); // Red color
+      doc.setLineWidth(2);
+      doc.rect(50, yPos, 100, 20);
+      doc.setFontSize(10);
+      doc.setTextColor(255, 0, 0);
+      doc.text('TEST: SIGNATURE SECTION EXECUTED', 55, yPos + 12);
+      doc.setTextColor(0, 0, 0); // Reset to black
+      console.log('🔴 DREW RED TEST BOX at Y:', yPos);
+      
+      yPos += 25; // Move below test box
+      
       console.log('Signature data check:', {
         kabidUmum: !!rabData.signatureKabidUmum,
         bendahara: !!rabData.signatureBendaharaYayasan,
@@ -626,17 +642,25 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
           }
         } else {
           // Draw a placeholder box if no signature
-          console.log(`No signature data for ${sig.title}, drawing placeholder`);
-          doc.setDrawColor(150, 150, 150);
-          doc.setLineWidth(1);
+          console.log(`🔲 Drawing placeholder for ${sig.title} at position:`, { xPos, yPos, sigWidth, sigHeight });
+          
+          // Draw a thick black border box
+          doc.setDrawColor(0, 0, 0);
+          doc.setLineWidth(2);
           doc.rect(xPos, yPos, sigWidth, sigHeight);
           
+          // Fill with light gray
+          doc.setFillColor(240, 240, 240);
+          doc.rect(xPos + 1, yPos + 1, sigWidth - 2, sigHeight - 2, 'F');
+          
           // Add "TTD" text in the middle of placeholder
-          doc.setFontSize(8);
-          doc.setFont('helvetica', 'normal');
-          doc.setTextColor(150, 150, 150);
-          doc.text('TTD', xPos + (sigWidth / 2), yPos + (sigHeight / 2) + 2, { align: 'center' });
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(100, 100, 100);
+          doc.text('TTD', xPos + (sigWidth / 2), yPos + (sigHeight / 2) + 3, { align: 'center' });
           doc.setTextColor(0, 0, 0); // Reset to black
+          
+          console.log(`✅ Placeholder drawn for ${sig.title}`);
         }
         
         // Add name and title below signature
