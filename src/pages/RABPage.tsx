@@ -428,12 +428,12 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
             fontSize: 7
           },
           columnStyles: {
-            0: { cellWidth: 45 }, // Uraian
-            1: { cellWidth: 12 }, // Vol
-            2: { cellWidth: 18 }, // Satuan
-            3: { cellWidth: 25 }, // Harga
-            4: { cellWidth: 30 }, // Jumlah
-            5: { cellWidth: 20 }  // Dana
+            0: { cellWidth: 40 }, // Uraian
+            1: { cellWidth: 10 }, // Vol
+            2: { cellWidth: 15 }, // Satuan
+            3: { cellWidth: 22 }, // Harga
+            4: { cellWidth: 25 }, // Jumlah
+            5: { cellWidth: 18 }  // Dana
           }
         });
         
@@ -480,12 +480,12 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
             fontSize: 7
           },
           columnStyles: {
-            0: { cellWidth: 45 }, // Uraian
-            1: { cellWidth: 12 }, // Vol
-            2: { cellWidth: 18 }, // Satuan
-            3: { cellWidth: 25 }, // Harga
-            4: { cellWidth: 30 }, // Jumlah
-            5: { cellWidth: 20 }  // Dana
+            0: { cellWidth: 40 }, // Uraian
+            1: { cellWidth: 10 }, // Vol
+            2: { cellWidth: 15 }, // Satuan
+            3: { cellWidth: 22 }, // Harga
+            4: { cellWidth: 25 }, // Jumlah
+            5: { cellWidth: 18 }  // Dana
           }
         });
         
