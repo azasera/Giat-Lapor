@@ -495,40 +495,60 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
       
       // FORCE ADD TEST TEXT TO ENSURE THIS SECTION IS REACHED
       console.log('🚀 REACHED AFTER TOTAL ANGGARAN - Y Position:', yPos);
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(255, 0, 0);
-      doc.text('>>> TEST: BAGIAN SETELAH TOTAL ANGGARAN <<<', 14, yPos);
-      doc.setTextColor(0, 0, 0);
-      yPos += 10;
       
-      // Add summary by source of fund
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.text('RINGKASAN PER SUMBER DANA:', 14, yPos);
-      yPos += 5;
+      try {
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(255, 0, 0);
+        doc.text('>>> TEST: BAGIAN SETELAH TOTAL ANGGARAN <<<', 14, yPos);
+        doc.setTextColor(0, 0, 0);
+        yPos += 10;
+        console.log('✅ Test text added successfully');
+        
+        // Add summary by source of fund
+        console.log('📊 Starting summary section...');
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text('RINGKASAN PER SUMBER DANA:', 14, yPos);
+        yPos += 5;
+        console.log('✅ Summary header added');
+      } catch (error) {
+        console.error('❌ Error in post-total section:', error);
+        // Continue execution even if there's an error
+      }
       
-      const summaryBySource = ['Yayasan', 'Bos', 'Komite', 'Donasi'].map(source => {
-        const routineTotal = rabData.routineExpenses
-          .filter(item => item.sourceOfFund === source)
-          .reduce((sum, item) => sum + item.amount, 0);
-        const incidentalTotal = rabData.incidentalExpenses
-          .filter(item => item.sourceOfFund === source)
-          .reduce((sum, item) => sum + item.amount, 0);
-        const total = routineTotal + incidentalTotal;
-        return [source, `Rp ${total.toLocaleString('id-ID')}`];
-      }).filter(([, total]) => total !== 'Rp 0');
-      
-      if (summaryBySource.length > 0) {
-        autoTable(doc, {
-          startY: yPos,
-          head: [['Sumber Dana', 'Total']],
-          body: summaryBySource,
-          theme: 'striped',
-          styles: { fontSize: 8, cellPadding: 1.5 },
-          headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold', fontSize: 8 }
-        });
-        yPos = (doc as any).lastAutoTable.finalY + 10;
+      try {
+        console.log('📊 Calculating summary by source...');
+        const summaryBySource = ['Yayasan', 'Bos', 'Komite', 'Donasi'].map(source => {
+          const routineTotal = rabData.routineExpenses
+            .filter(item => item.sourceOfFund === source)
+            .reduce((sum, item) => sum + item.amount, 0);
+          const incidentalTotal = rabData.incidentalExpenses
+            .filter(item => item.sourceOfFund === source)
+            .reduce((sum, item) => sum + item.amount, 0);
+          const total = routineTotal + incidentalTotal;
+          return [source, `Rp ${total.toLocaleString('id-ID')}`];
+        }).filter(([, total]) => total !== 'Rp 0');
+        
+        console.log('📊 Summary data:', summaryBySource);
+        
+        if (summaryBySource.length > 0) {
+          autoTable(doc, {
+            startY: yPos,
+            head: [['Sumber Dana', 'Total']],
+            body: summaryBySource,
+            theme: 'striped',
+            styles: { fontSize: 8, cellPadding: 1.5 },
+            headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold', fontSize: 8 }
+          });
+          yPos = (doc as any).lastAutoTable.finalY + 10;
+          console.log('✅ Summary table added, new Y position:', yPos);
+        } else {
+          console.log('⚠️ No summary data to display');
+        }
+      } catch (error) {
+        console.error('❌ Error in summary section:', error);
+        yPos += 20; // Skip summary section if error
       }
       
       // Add review comment if exists
