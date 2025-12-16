@@ -491,6 +491,15 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(12);
       doc.text(`TOTAL ANGGARAN: Rp ${(totalRoutineExpenses + totalIncidentalExpenses).toLocaleString('id-ID')}`, 14, yPos);
+      yPos += 15;
+      
+      // FORCE ADD TEST TEXT TO ENSURE THIS SECTION IS REACHED
+      console.log('🚀 REACHED AFTER TOTAL ANGGARAN - Y Position:', yPos);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(255, 0, 0);
+      doc.text('>>> TEST: BAGIAN SETELAH TOTAL ANGGARAN <<<', 14, yPos);
+      doc.setTextColor(0, 0, 0);
       yPos += 10;
       
       // Add summary by source of fund
