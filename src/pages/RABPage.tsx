@@ -426,13 +426,13 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
           styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak' },
           headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: 'bold', fontSize: 8 },
           columnStyles: {
-            0: { cellWidth: 50 }, // Uraian - lebih lebar untuk F4
-            1: { cellWidth: 15 }, // Volume
-            2: { cellWidth: 20 }, // Satuan
-            3: { cellWidth: 25 }, // Harga Satuan
-            4: { cellWidth: 25 }, // Jumlah
-            5: { cellWidth: 20 }, // Sumber Dana
-            6: { cellWidth: 20 }  // Waktu
+            0: { cellWidth: 45 }, // Uraian
+            1: { cellWidth: 12 }, // Volume
+            2: { cellWidth: 18 }, // Satuan
+            3: { cellWidth: 22 }, // Harga Satuan
+            4: { cellWidth: 22 }, // Jumlah
+            5: { cellWidth: 18 }, // Sumber Dana
+            6: { cellWidth: 18 }  // Waktu
           },
           margin: { left: 14, right: 14 }
         });
@@ -472,13 +472,13 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
           styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak' },
           headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: 'bold', fontSize: 8 },
           columnStyles: {
-            0: { cellWidth: 50 }, // Uraian - lebih lebar untuk F4
-            1: { cellWidth: 15 }, // Volume
-            2: { cellWidth: 20 }, // Satuan
-            3: { cellWidth: 25 }, // Harga Satuan
-            4: { cellWidth: 25 }, // Jumlah
-            5: { cellWidth: 20 }, // Sumber Dana
-            6: { cellWidth: 20 }  // Waktu
+            0: { cellWidth: 45 }, // Uraian
+            1: { cellWidth: 12 }, // Volume
+            2: { cellWidth: 18 }, // Satuan
+            3: { cellWidth: 22 }, // Harga Satuan
+            4: { cellWidth: 22 }, // Jumlah
+            5: { cellWidth: 18 }, // Sumber Dana
+            6: { cellWidth: 18 }  // Waktu
           },
           margin: { left: 14, right: 14 }
         });
@@ -523,8 +523,8 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
           styles: { fontSize: 9, cellPadding: 2 },
           headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' },
           columnStyles: {
-            0: { cellWidth: 50 },
-            1: { cellWidth: 50 }
+            0: { cellWidth: 45 },
+            1: { cellWidth: 45 }
           },
           margin: { left: 14, right: 14 }
         });
