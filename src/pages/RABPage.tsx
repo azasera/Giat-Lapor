@@ -367,8 +367,9 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
   }, [rabData, reviewComment, onRABSaved]);
 
   const handleDownloadPDF_v3 = useCallback(() => {
-    console.log('🚀🚀🚀 PDF DOWNLOAD V3 STARTED - TIMESTAMP:', new Date().toISOString());
-    console.log('🔥 FORCE CACHE REFRESH - BUILD TIME:', '2025-12-16-01:00:00');
+    console.log('🚀🚀🚀 PDF DOWNLOAD V3.1 STARTED - TIMESTAMP:', new Date().toISOString());
+    console.log('🔥 FORCE CACHE REFRESH - BUILD TIME:', '2025-12-16-07:30:00');
+    console.log('🆕 DEPLOYMENT FORCE UPDATE - VERSION 3.1');
     const loadingToastId = showLoading('Membuat PDF...');
     try {
       const doc = new jsPDF({
