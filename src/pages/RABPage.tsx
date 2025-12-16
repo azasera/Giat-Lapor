@@ -384,6 +384,12 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
       doc.setFont('helvetica', 'bold');
       doc.text('RENCANA ANGGARAN BELANJA', doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
       
+      // VERSION INDICATOR IN PDF
+      doc.setFontSize(8);
+      doc.setTextColor(255, 0, 0);
+      doc.text('PDF VERSION 3.2 - SIGNATURE FIXED', doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
+      doc.setTextColor(0, 0, 0);
+      
       // Institution Info
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
