@@ -367,9 +367,10 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
   }, [rabData, reviewComment, onRABSaved]);
 
   const handleDownloadPDF_v3 = useCallback(() => {
-    console.log('🚀🚀🚀 PDF DOWNLOAD V3.1 STARTED - TIMESTAMP:', new Date().toISOString());
-    console.log('🔥 FORCE CACHE REFRESH - BUILD TIME:', '2025-12-16-07:30:00');
-    console.log('🆕 DEPLOYMENT FORCE UPDATE - VERSION 3.1');
+    console.log('🚀🚀🚀 PDF DOWNLOAD V3.2 STARTED - TIMESTAMP:', new Date().toISOString());
+    console.log('🔥 FORCE CACHE REFRESH - BUILD TIME:', '2025-12-16-11:45:00');
+    console.log('🆕 DEPLOYMENT FORCE UPDATE - VERSION 3.2 - SIGNATURE FIXED');
+    alert('PDF V3.2 - Signature Fixed! Check console for logs.');
     const loadingToastId = showLoading('Membuat PDF...');
     try {
       const doc = new jsPDF({
@@ -907,7 +908,7 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
         </button>
         <h1 className="text-2xl font-bold text-center text-emerald-700 dark:text-emerald-400 flex-grow">
           RENCANA ANGGARAN BELANJA
-          <span className="text-xs text-gray-500 block">v3.1 - Force Deploy</span>
+          <span className="text-xs text-red-600 block font-bold">🔥 v3.2 - SIGNATURE FIXED 🔥</span>
         </h1>
         <div className="flex items-center space-x-2">
           <button
