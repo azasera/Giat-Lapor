@@ -906,7 +906,7 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
         </button>
         <h1 className="text-2xl font-bold text-center text-emerald-700 dark:text-emerald-400 flex-grow">
           RENCANA ANGGARAN BELANJA
-          <span className="text-xs text-gray-500 block">v3.0 - TTD Fix</span>
+          <span className="text-xs text-gray-500 block">v3.1 - Force Deploy</span>
         </h1>
         <div className="flex items-center space-x-2">
           <button
