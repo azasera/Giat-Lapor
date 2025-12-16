@@ -366,7 +366,7 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
     }
   }, [rabData, reviewComment, onRABSaved]);
 
-  const handleDownloadPDF = useCallback(() => {
+  const handleDownloadPDF_v2 = useCallback(() => {
     const loadingToastId = showLoading('Membuat PDF...');
     try {
       const doc = new jsPDF({
@@ -1034,7 +1034,7 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
         </h1>
         <div className="flex items-center space-x-2">
           <button
-            onClick={handleDownloadPDF}
+            onClick={handleDownloadPDF_v2}
             className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center space-x-2"
             title="Download PDF"
           >
