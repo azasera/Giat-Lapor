@@ -383,10 +383,17 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
       doc.text(`Periode: ${rabData.period}`, 14, 30);
       doc.text(`Tahun: ${rabData.year}`, 14, 35);
       
-      // Status
+      // Status and dates
       doc.text(`Status: ${rabData.status === 'submitted' ? 'Dikirim' : rabData.status === 'approved' ? 'Disetujui' : rabData.status === 'rejected' ? 'Ditolak' : 'Draft'}`, 14, 40);
       
-      let yPos = 50;
+      if (rabData.submittedAt) {
+        doc.text(`Tanggal Dikirim: ${new Date(rabData.submittedAt).toLocaleDateString('id-ID')}`, 14, 45);
+      }
+      if (rabData.reviewedAt) {
+        doc.text(`Tanggal Ditinjau: ${new Date(rabData.reviewedAt).toLocaleDateString('id-ID')}`, 14, 50);
+      }
+      
+      let yPos = rabData.reviewedAt ? 55 : rabData.submittedAt ? 50 : 45;
       
       // Belanja Rutin
       doc.setFontSize(12);
@@ -482,7 +489,59 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(12);
       doc.text(`TOTAL ANGGARAN: Rp ${(totalRoutineExpenses + totalIncidentalExpenses).toLocaleString('id-ID')}`, 14, yPos);
-      yPos += 15;
+      yPos += 10;
+      
+      // Add summary by source of fund
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('RINGKASAN PER SUMBER DANA:', 14, yPos);
+      yPos += 5;
+      
+      const summaryBySource = ['Yayasan', 'Bos', 'Komite', 'Donasi'].map(source => {
+        const routineTotal = rabData.routineExpenses
+          .filter(item => item.sourceOfFund === source)
+          .reduce((sum, item) => sum + item.amount, 0);
+        const incidentalTotal = rabData.incidentalExpenses
+          .filter(item => item.sourceOfFund === source)
+          .reduce((sum, item) => sum + item.amount, 0);
+        const total = routineTotal + incidentalTotal;
+        return [source, `Rp ${total.toLocaleString('id-ID')}`];
+      }).filter(([, total]) => total !== 'Rp 0');
+      
+      if (summaryBySource.length > 0) {
+        autoTable(doc, {
+          startY: yPos,
+          head: [['Sumber Dana', 'Total']],
+          body: summaryBySource,
+          theme: 'grid',
+          styles: { fontSize: 9, cellPadding: 2 },
+          headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' },
+          columnStyles: {
+            0: { cellWidth: 40 },
+            1: { cellWidth: 40 }
+          }
+        });
+        yPos = (doc as any).lastAutoTable.finalY + 10;
+      }
+      
+      // Add review comment if exists
+      if (rabData.reviewComment && rabData.reviewComment.trim() !== '') {
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text('CATATAN YAYASAN:', 14, yPos);
+        yPos += 5;
+        
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        const commentLines = doc.splitTextToSize(rabData.reviewComment, 180);
+        commentLines.forEach((line: string) => {
+          doc.text(line, 14, yPos);
+          yPos += 4;
+        });
+        yPos += 5;
+      }
+      
+      yPos += 10;
       
       // Add signatures section
       doc.setFontSize(10);
@@ -572,6 +631,38 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
           nameYPos += 3;
         });
       });
+      
+      // Add footer with additional info
+      yPos += 40; // Space after signatures
+      
+      // Check if we need a new page for footer
+      if (yPos > 250) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      // Footer separator
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.5);
+      doc.line(14, yPos, doc.internal.pageSize.getWidth() - 14, yPos);
+      yPos += 5;
+      
+      // Footer info
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`PDF dibuat pada: ${new Date().toLocaleDateString('id-ID', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })}`, 14, yPos);
+      yPos += 4;
+      
+      doc.text(`ID RAB: ${rabData.id}`, 14, yPos);
+      yPos += 4;
+      
+      doc.text('© 2025 Lapor Giat - Sistem Pelaporan Kegiatan', 14, yPos);
       
       // Save PDF
       const fileName = `RAB_${rabData.institutionName}_${rabData.period}_${rabData.year}.pdf`;
