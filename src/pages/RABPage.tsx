@@ -422,21 +422,18 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
           startY: yPos,
           head: [['Uraian', 'Vol', 'Satuan', 'Harga Satuan', 'Jumlah', 'Sumber', 'Waktu']],
           body: routineData,
-          theme: 'grid',
+          theme: 'striped',
           styles: { 
-            fontSize: 7, 
-            cellPadding: 1.5, 
-            overflow: 'linebreak',
-            cellWidth: 'wrap'
+            fontSize: 6, 
+            cellPadding: 1,
+            overflow: 'linebreak'
           },
           headStyles: { 
             fillColor: [16, 185, 129], 
             textColor: 255, 
             fontStyle: 'bold', 
-            fontSize: 7 
-          },
-          tableWidth: 'auto',
-          margin: { left: 14, right: 14 }
+            fontSize: 6
+          }
         });
         
         yPos = (doc as any).lastAutoTable.finalY + 5;
@@ -470,21 +467,18 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
           startY: yPos,
           head: [['Uraian', 'Vol', 'Satuan', 'Harga Satuan', 'Jumlah', 'Sumber', 'Waktu']],
           body: incidentalData,
-          theme: 'grid',
+          theme: 'striped',
           styles: { 
-            fontSize: 7, 
-            cellPadding: 1.5, 
-            overflow: 'linebreak',
-            cellWidth: 'wrap'
+            fontSize: 6, 
+            cellPadding: 1,
+            overflow: 'linebreak'
           },
           headStyles: { 
             fillColor: [16, 185, 129], 
             textColor: 255, 
             fontStyle: 'bold', 
-            fontSize: 7 
-          },
-          tableWidth: 'auto',
-          margin: { left: 14, right: 14 }
+            fontSize: 6
+          }
         });
         
         yPos = (doc as any).lastAutoTable.finalY + 5;
@@ -523,11 +517,9 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
           startY: yPos,
           head: [['Sumber Dana', 'Total']],
           body: summaryBySource,
-          theme: 'grid',
-          styles: { fontSize: 9, cellPadding: 2 },
-          headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' },
-          tableWidth: 'auto',
-          margin: { left: 14, right: 14 }
+          theme: 'striped',
+          styles: { fontSize: 8, cellPadding: 1.5 },
+          headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold', fontSize: 8 }
         });
         yPos = (doc as any).lastAutoTable.finalY + 10;
       }
