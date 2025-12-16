@@ -369,7 +369,11 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
   const handleDownloadPDF = useCallback(() => {
     const loadingToastId = showLoading('Membuat PDF...');
     try {
-      const doc = new jsPDF();
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: [210, 330] // F4 size: 210mm x 330mm
+      });
       
       // Title
       doc.setFontSize(16);
@@ -416,20 +420,21 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
       if (routineData.length > 0) {
         autoTable(doc, {
           startY: yPos,
-          head: [['Uraian', 'Volume', 'Satuan', 'Harga Satuan', 'Jumlah', 'Sumber Dana', 'Waktu']],
+          head: [['Uraian', 'Vol', 'Satuan', 'Harga Satuan', 'Jumlah', 'Sumber', 'Waktu']],
           body: routineData,
           theme: 'grid',
-          styles: { fontSize: 8, cellPadding: 2 },
-          headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: 'bold' },
+          styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak' },
+          headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: 'bold', fontSize: 8 },
           columnStyles: {
-            0: { cellWidth: 40 },
-            1: { cellWidth: 15 },
-            2: { cellWidth: 20 },
-            3: { cellWidth: 25 },
-            4: { cellWidth: 25 },
-            5: { cellWidth: 20 },
-            6: { cellWidth: 20 }
-          }
+            0: { cellWidth: 50 }, // Uraian - lebih lebar untuk F4
+            1: { cellWidth: 15 }, // Volume
+            2: { cellWidth: 20 }, // Satuan
+            3: { cellWidth: 25 }, // Harga Satuan
+            4: { cellWidth: 25 }, // Jumlah
+            5: { cellWidth: 20 }, // Sumber Dana
+            6: { cellWidth: 20 }  // Waktu
+          },
+          margin: { left: 14, right: 14 }
         });
         
         yPos = (doc as any).lastAutoTable.finalY + 5;
@@ -461,20 +466,21 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
       if (incidentalData.length > 0) {
         autoTable(doc, {
           startY: yPos,
-          head: [['Uraian', 'Volume', 'Satuan', 'Harga Satuan', 'Jumlah', 'Sumber Dana', 'Waktu']],
+          head: [['Uraian', 'Vol', 'Satuan', 'Harga Satuan', 'Jumlah', 'Sumber', 'Waktu']],
           body: incidentalData,
           theme: 'grid',
-          styles: { fontSize: 8, cellPadding: 2 },
-          headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: 'bold' },
+          styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak' },
+          headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: 'bold', fontSize: 8 },
           columnStyles: {
-            0: { cellWidth: 40 },
-            1: { cellWidth: 15 },
-            2: { cellWidth: 20 },
-            3: { cellWidth: 25 },
-            4: { cellWidth: 25 },
-            5: { cellWidth: 20 },
-            6: { cellWidth: 20 }
-          }
+            0: { cellWidth: 50 }, // Uraian - lebih lebar untuk F4
+            1: { cellWidth: 15 }, // Volume
+            2: { cellWidth: 20 }, // Satuan
+            3: { cellWidth: 25 }, // Harga Satuan
+            4: { cellWidth: 25 }, // Jumlah
+            5: { cellWidth: 20 }, // Sumber Dana
+            6: { cellWidth: 20 }  // Waktu
+          },
+          margin: { left: 14, right: 14 }
         });
         
         yPos = (doc as any).lastAutoTable.finalY + 5;
@@ -517,9 +523,10 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
           styles: { fontSize: 9, cellPadding: 2 },
           headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' },
           columnStyles: {
-            0: { cellWidth: 40 },
-            1: { cellWidth: 40 }
-          }
+            0: { cellWidth: 50 },
+            1: { cellWidth: 50 }
+          },
+          margin: { left: 14, right: 14 }
         });
         yPos = (doc as any).lastAutoTable.finalY + 10;
       }
@@ -554,8 +561,8 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
       doc.text(`Pangkalpinang, ${currentDate}`, doc.internal.pageSize.getWidth() / 2, yPos, { align: 'center' });
       yPos += 10;
       
-      // Check if we need a new page for signatures
-      if (yPos > 200) {
+      // Check if we need a new page for signatures (F4 is taller than A4)
+      if (yPos > 280) {
         doc.addPage();
         yPos = 20;
         doc.text(`Pangkalpinang, ${currentDate}`, doc.internal.pageSize.getWidth() / 2, yPos, { align: 'center' });
@@ -579,6 +586,7 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
         { data: rabData.signatureKepalaMTA, name: 'Azali Abdul Ghani', title: 'Kepala MTA' }
       ];
       
+      console.log('=== SIGNATURE SECTION START ===');
       console.log('Signature data check:', {
         kabidUmum: !!rabData.signatureKabidUmum,
         bendahara: !!rabData.signatureBendaharaYayasan,
@@ -586,6 +594,8 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
         ketua: !!rabData.signatureKetuaYayasan,
         kepalaMTA: !!rabData.signatureKepalaMTA
       });
+      console.log('Signature Y position:', yPos);
+      console.log('Page width:', pageWidth, 'Available width:', availableWidth);
       
       signatures.forEach((sig, index) => {
         const xPos = startX + (index * spacing) + (spacing - sigWidth) / 2;
@@ -635,8 +645,8 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
       // Add footer with additional info
       yPos += 40; // Space after signatures
       
-      // Check if we need a new page for footer
-      if (yPos > 250) {
+      // Check if we need a new page for footer (F4 is taller)
+      if (yPos > 310) {
         doc.addPage();
         yPos = 20;
       }
