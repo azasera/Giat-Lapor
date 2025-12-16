@@ -366,8 +366,9 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
     }
   }, [rabData, reviewComment, onRABSaved]);
 
-  const handleDownloadPDF_v2 = useCallback(() => {
-    console.log('🚀🚀🚀 PDF DOWNLOAD STARTED - VERSION 2 - TIMESTAMP:', new Date().toISOString());
+  const handleDownloadPDF_v3 = useCallback(() => {
+    console.log('🚀🚀🚀 PDF DOWNLOAD V3 STARTED - TIMESTAMP:', new Date().toISOString());
+    console.log('🔥 FORCE CACHE REFRESH - BUILD TIME:', '2025-12-16-01:00:00');
     const loadingToastId = showLoading('Membuat PDF...');
     try {
       const doc = new jsPDF({
@@ -375,7 +376,6 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
         unit: 'mm',
         format: [210, 330] // F4 size: 210mm x 330mm
       });
-      console.log('✅ jsPDF initialized with F4 format');
       
       // Title
       doc.setFontSize(16);
@@ -388,18 +388,9 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
       doc.text(`Nama Lembaga: ${rabData.institutionName}`, 14, 25);
       doc.text(`Periode: ${rabData.period}`, 14, 30);
       doc.text(`Tahun: ${rabData.year}`, 14, 35);
-      
-      // Status and dates
       doc.text(`Status: ${rabData.status === 'submitted' ? 'Dikirim' : rabData.status === 'approved' ? 'Disetujui' : rabData.status === 'rejected' ? 'Ditolak' : 'Draft'}`, 14, 40);
       
-      if (rabData.submittedAt) {
-        doc.text(`Tanggal Dikirim: ${new Date(rabData.submittedAt).toLocaleDateString('id-ID')}`, 14, 45);
-      }
-      if (rabData.reviewedAt) {
-        doc.text(`Tanggal Ditinjau: ${new Date(rabData.reviewedAt).toLocaleDateString('id-ID')}`, 14, 50);
-      }
-      
-      let yPos = rabData.reviewedAt ? 55 : rabData.submittedAt ? 50 : 45;
+      let yPos = 50;
       
       // Belanja Rutin
       doc.setFontSize(12);
@@ -425,15 +416,23 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
           body: routineData,
           theme: 'striped',
           styles: { 
-            fontSize: 6, 
-            cellPadding: 1,
+            fontSize: 7, 
+            cellPadding: 1.5,
             overflow: 'linebreak'
           },
           headStyles: { 
             fillColor: [16, 185, 129], 
             textColor: 255, 
             fontStyle: 'bold', 
-            fontSize: 6
+            fontSize: 7
+          },
+          columnStyles: {
+            0: { cellWidth: 45 }, // Uraian
+            1: { cellWidth: 12 }, // Vol
+            2: { cellWidth: 18 }, // Satuan
+            3: { cellWidth: 25 }, // Harga
+            4: { cellWidth: 30 }, // Jumlah
+            5: { cellWidth: 20 }  // Dana
           }
         });
         
@@ -469,15 +468,23 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
           body: incidentalData,
           theme: 'striped',
           styles: { 
-            fontSize: 6, 
-            cellPadding: 1,
+            fontSize: 7, 
+            cellPadding: 1.5,
             overflow: 'linebreak'
           },
           headStyles: { 
             fillColor: [16, 185, 129], 
             textColor: 255, 
             fontStyle: 'bold', 
-            fontSize: 6
+            fontSize: 7
+          },
+          columnStyles: {
+            0: { cellWidth: 45 }, // Uraian
+            1: { cellWidth: 12 }, // Vol
+            2: { cellWidth: 18 }, // Satuan
+            3: { cellWidth: 25 }, // Harga
+            4: { cellWidth: 30 }, // Jumlah
+            5: { cellWidth: 20 }  // Dana
           }
         });
         
@@ -493,65 +500,7 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(12);
       doc.text(`TOTAL ANGGARAN: Rp ${(totalRoutineExpenses + totalIncidentalExpenses).toLocaleString('id-ID')}`, 14, yPos);
-      yPos += 15;
-      
-      // FORCE ADD TEST TEXT TO ENSURE THIS SECTION IS REACHED
-      console.log('🚀 REACHED AFTER TOTAL ANGGARAN - Y Position:', yPos);
-      
-      try {
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(255, 0, 0);
-        doc.text('>>> TEST: BAGIAN SETELAH TOTAL ANGGARAN <<<', 14, yPos);
-        doc.setTextColor(0, 0, 0);
-        yPos += 10;
-        console.log('✅ Test text added successfully');
-        
-        // Add summary by source of fund
-        console.log('📊 Starting summary section...');
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
-        doc.text('RINGKASAN PER SUMBER DANA:', 14, yPos);
-        yPos += 5;
-        console.log('✅ Summary header added');
-      } catch (error) {
-        console.error('❌ Error in post-total section:', error);
-        // Continue execution even if there's an error
-      }
-      
-      try {
-        console.log('📊 Calculating summary by source...');
-        const summaryBySource = ['Yayasan', 'Bos', 'Komite', 'Donasi'].map(source => {
-          const routineTotal = rabData.routineExpenses
-            .filter(item => item.sourceOfFund === source)
-            .reduce((sum, item) => sum + item.amount, 0);
-          const incidentalTotal = rabData.incidentalExpenses
-            .filter(item => item.sourceOfFund === source)
-            .reduce((sum, item) => sum + item.amount, 0);
-          const total = routineTotal + incidentalTotal;
-          return [source, `Rp ${total.toLocaleString('id-ID')}`];
-        }).filter(([, total]) => total !== 'Rp 0');
-        
-        console.log('📊 Summary data:', summaryBySource);
-        
-        if (summaryBySource.length > 0) {
-          autoTable(doc, {
-            startY: yPos,
-            head: [['Sumber Dana', 'Total']],
-            body: summaryBySource,
-            theme: 'striped',
-            styles: { fontSize: 8, cellPadding: 1.5 },
-            headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold', fontSize: 8 }
-          });
-          yPos = (doc as any).lastAutoTable.finalY + 10;
-          console.log('✅ Summary table added, new Y position:', yPos);
-        } else {
-          console.log('⚠️ No summary data to display');
-        }
-      } catch (error) {
-        console.error('❌ Error in summary section:', error);
-        yPos += 20; // Skip summary section if error
-      }
+      yPos += 20;
       
       // Add review comment if exists
       if (rabData.reviewComment && rabData.reviewComment.trim() !== '') {
@@ -567,19 +516,22 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
           doc.text(line, 14, yPos);
           yPos += 4;
         });
-        yPos += 5;
+        yPos += 10;
       }
       
-      yPos += 10;
+      // SIGNATURE SECTION - SIMPLIFIED AND GUARANTEED TO WORK
+      console.log('🔥 ADDING SIGNATURE SECTION - Y Position:', yPos);
       
-      // Add signatures section
-      console.log('🔥 STARTING SIGNATURE SECTION - Y Position:', yPos);
+      // Check if we need a new page for signatures
+      if (yPos > 250) {
+        doc.addPage();
+        yPos = 20;
+      }
       
-      doc.setFontSize(12);
+      doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
       doc.text('TANDA TANGAN', doc.internal.pageSize.getWidth() / 2, yPos, { align: 'center' });
-      console.log('✅ Added TANDA TANGAN header at Y:', yPos);
-      yPos += 8;
+      yPos += 10;
       
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
@@ -589,24 +541,15 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
         day: 'numeric'
       });
       doc.text(`Pangkalpinang, ${currentDate}`, doc.internal.pageSize.getWidth() / 2, yPos, { align: 'center' });
-      yPos += 10;
+      yPos += 15;
       
-      // Check if we need a new page for signatures (F4 is taller than A4)
-      if (yPos > 280) {
-        doc.addPage();
-        yPos = 20;
-        doc.text(`Pangkalpinang, ${currentDate}`, doc.internal.pageSize.getWidth() / 2, yPos, { align: 'center' });
-        yPos += 10;
-      }
-      
-      // Signature positions (5 signatures in a row)
+      // Signature boxes - 5 signatures in a row
       const pageWidth = doc.internal.pageSize.getWidth();
-      const sigWidth = 30;
-      const sigHeight = 18;
-      const totalMargin = 14; // Left and right margins
+      const sigWidth = 32;
+      const sigHeight = 20;
+      const totalMargin = 14;
       const availableWidth = pageWidth - (totalMargin * 2);
-      const spacing = availableWidth / 5; // 5 signatures
-      const startX = totalMargin;
+      const spacing = availableWidth / 5;
       
       const signatures = [
         { data: rabData.signatureKabidUmum, name: 'Novan Herwando, S.E.', title: 'Kabid Umum' },
@@ -616,81 +559,42 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
         { data: rabData.signatureKepalaMTA, name: 'Azali Abdul Ghani', title: 'Kepala MTA' }
       ];
       
-      console.log('=== SIGNATURE SECTION START ===');
-      console.log('Current Y position before signatures:', yPos);
-      console.log('Page dimensions:', { width: pageWidth, height: doc.internal.pageSize.getHeight() });
-      
-      // FORCE DRAW A TEST BOX TO ENSURE THIS SECTION IS EXECUTED
-      doc.setDrawColor(255, 0, 0); // Red color
-      doc.setLineWidth(2);
-      doc.rect(50, yPos, 100, 20);
-      doc.setFontSize(10);
-      doc.setTextColor(255, 0, 0);
-      doc.text('TEST: SIGNATURE SECTION EXECUTED', 55, yPos + 12);
-      doc.setTextColor(0, 0, 0); // Reset to black
-      console.log('🔴 DREW RED TEST BOX at Y:', yPos);
-      
-      yPos += 25; // Move below test box
-      
-      console.log('Signature data check:', {
-        kabidUmum: !!rabData.signatureKabidUmum,
-        bendahara: !!rabData.signatureBendaharaYayasan,
-        sekretaris: !!rabData.signatureSekretarisYayasan,
-        ketua: !!rabData.signatureKetuaYayasan,
-        kepalaMTA: !!rabData.signatureKepalaMTA
-      });
-      console.log('Signature layout:', { 
-        sigWidth, 
-        sigHeight, 
-        spacing, 
-        startX, 
-        availableWidth 
-      });
-      
       signatures.forEach((sig, index) => {
-        const xPos = startX + (index * spacing) + (spacing - sigWidth) / 2;
+        const xPos = totalMargin + (index * spacing) + (spacing - sigWidth) / 2;
+        
+        // Draw signature box
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(1);
+        doc.rect(xPos, yPos, sigWidth, sigHeight);
         
         // Add signature image if available
         if (sig.data) {
           try {
-            doc.addImage(sig.data, 'PNG', xPos, yPos, sigWidth, sigHeight);
-            console.log(`Signature ${index + 1} (${sig.title}) added successfully`);
+            doc.addImage(sig.data, 'PNG', xPos + 2, yPos + 2, sigWidth - 4, sigHeight - 4);
+            console.log(`✅ Signature added for ${sig.title}`);
           } catch (error) {
-            console.error(`Error adding signature ${index + 1} (${sig.title}):`, error);
-            // Draw placeholder box on error
-            doc.setDrawColor(200, 200, 200);
-            doc.setLineWidth(0.5);
-            doc.rect(xPos, yPos, sigWidth, sigHeight);
+            console.error(`❌ Error adding signature for ${sig.title}:`, error);
+            // Add placeholder text if image fails
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'normal');
+            doc.text('TTD', xPos + (sigWidth / 2), yPos + (sigHeight / 2) + 2, { align: 'center' });
           }
         } else {
-          // Draw a placeholder box if no signature
-          console.log(`🔲 Drawing placeholder for ${sig.title} at position:`, { xPos, yPos, sigWidth, sigHeight });
-          
-          // Draw a thick black border box
-          doc.setDrawColor(0, 0, 0);
-          doc.setLineWidth(2);
-          doc.rect(xPos, yPos, sigWidth, sigHeight);
-          
-          // Fill with light gray
-          doc.setFillColor(240, 240, 240);
-          doc.rect(xPos + 1, yPos + 1, sigWidth - 2, sigHeight - 2, 'F');
-          
-          // Add "TTD" text in the middle of placeholder
-          doc.setFontSize(10);
-          doc.setFont('helvetica', 'bold');
+          // Add placeholder text
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'normal');
           doc.setTextColor(100, 100, 100);
-          doc.text('TTD', xPos + (sigWidth / 2), yPos + (sigHeight / 2) + 3, { align: 'center' });
-          doc.setTextColor(0, 0, 0); // Reset to black
-          
-          console.log(`✅ Placeholder drawn for ${sig.title}`);
+          doc.text('TTD', xPos + (sigWidth / 2), yPos + (sigHeight / 2) + 2, { align: 'center' });
+          doc.setTextColor(0, 0, 0);
         }
         
         // Add name and title below signature
         const centerX = xPos + (sigWidth / 2);
         doc.setFontSize(7);
         doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
         
-        // Split long names into multiple lines if needed
+        // Name
         const nameLines = doc.splitTextToSize(sig.name, sigWidth);
         let nameYPos = yPos + sigHeight + 4;
         nameLines.forEach((line: string) => {
@@ -698,6 +602,7 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
           nameYPos += 3;
         });
         
+        // Title
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(6.5);
         const titleLines = doc.splitTextToSize(sig.title, sigWidth);
@@ -707,25 +612,20 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
         });
       });
       
-      console.log('=== SIGNATURE SECTION COMPLETE ===');
-      console.log('Y position after signatures:', yPos);
+      console.log('✅ SIGNATURE SECTION COMPLETED');
       
-      // Add footer with additional info
-      yPos += 40; // Space after signatures
-      
-      // Check if we need a new page for footer (F4 is taller)
+      // Footer
+      yPos += 50;
       if (yPos > 310) {
         doc.addPage();
         yPos = 20;
       }
       
-      // Footer separator
       doc.setDrawColor(200, 200, 200);
       doc.setLineWidth(0.5);
-      doc.line(14, yPos, doc.internal.pageSize.getWidth() - 14, yPos);
+      doc.line(14, yPos, pageWidth - 14, yPos);
       yPos += 5;
       
-      // Footer info
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
       doc.text(`PDF dibuat pada: ${new Date().toLocaleDateString('id-ID', { 
@@ -742,42 +642,15 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
       
       doc.text('© 2025 Lapor Giat - Sistem Pelaporan Kegiatan', 14, yPos);
       
-      // SIMPLE SIGNATURE SECTION - ALWAYS ADD
-      yPos += 20;
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text('TANDA TANGAN', doc.internal.pageSize.getWidth() / 2, yPos, { align: 'center' });
-      yPos += 15;
-      
-      // Simple signature boxes
-      const sigNames = ['Kabid Umum', 'Bendahara', 'Sekretaris', 'Ketua Yayasan', 'Kepala MTA'];
-      const boxWidth = 30;
-      const boxHeight = 20;
-      const startX = 20;
-      const spacing = 35;
-      
-      sigNames.forEach((name, index) => {
-        const xPos = startX + (index * spacing);
-        
-        // Draw signature box
-        doc.setDrawColor(0, 0, 0);
-        doc.setLineWidth(1);
-        doc.rect(xPos, yPos, boxWidth, boxHeight);
-        
-        // Add name below box
-        doc.setFontSize(8);
-        doc.setFont('helvetica', 'normal');
-        doc.text(name, xPos + (boxWidth / 2), yPos + boxHeight + 5, { align: 'center' });
-      });
-      
       // Save PDF
       const fileName = `RAB_${rabData.institutionName}_${rabData.period}_${rabData.year}.pdf`;
       doc.save(fileName);
       
       dismissToast(loadingToastId);
       showSuccess('PDF berhasil diunduh!');
+      console.log('✅ PDF DOWNLOAD COMPLETED SUCCESSFULLY');
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      console.error('❌ Error generating PDF:', error);
       dismissToast(loadingToastId);
       showError('Gagal membuat PDF. Silakan coba lagi.');
     }
@@ -1033,10 +906,11 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
         </button>
         <h1 className="text-2xl font-bold text-center text-emerald-700 dark:text-emerald-400 flex-grow">
           RENCANA ANGGARAN BELANJA
+          <span className="text-xs text-gray-500 block">v3.0 - TTD Fix</span>
         </h1>
         <div className="flex items-center space-x-2">
           <button
-            onClick={handleDownloadPDF_v2}
+            onClick={handleDownloadPDF_v3}
             className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center space-x-2"
             title="Download PDF"
           >
@@ -1281,7 +1155,7 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
           {/* Download Buttons for Foundation */}
           <div className="mb-6 flex flex-wrap gap-3">
             <button
-              onClick={handleDownloadPDF_v2}
+              onClick={handleDownloadPDF_v3}
               className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center space-x-2"
               title="Download PDF"
             >
