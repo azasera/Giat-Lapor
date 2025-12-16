@@ -740,6 +740,34 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
       
       doc.text('© 2025 Lapor Giat - Sistem Pelaporan Kegiatan', 14, yPos);
       
+      // SIMPLE SIGNATURE SECTION - ALWAYS ADD
+      yPos += 20;
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('TANDA TANGAN', doc.internal.pageSize.getWidth() / 2, yPos, { align: 'center' });
+      yPos += 15;
+      
+      // Simple signature boxes
+      const sigNames = ['Kabid Umum', 'Bendahara', 'Sekretaris', 'Ketua Yayasan', 'Kepala MTA'];
+      const boxWidth = 30;
+      const boxHeight = 20;
+      const startX = 20;
+      const spacing = 35;
+      
+      sigNames.forEach((name, index) => {
+        const xPos = startX + (index * spacing);
+        
+        // Draw signature box
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(1);
+        doc.rect(xPos, yPos, boxWidth, boxHeight);
+        
+        // Add name below box
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.text(name, xPos + (boxWidth / 2), yPos + boxHeight + 5, { align: 'center' });
+      });
+      
       // Save PDF
       const fileName = `RAB_${rabData.institutionName}_${rabData.period}_${rabData.year}.pdf`;
       doc.save(fileName);
