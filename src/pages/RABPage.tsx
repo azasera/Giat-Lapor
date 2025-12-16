@@ -413,14 +413,13 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
           item.unit,
           `Rp ${item.unitPrice.toLocaleString('id-ID')}`,
           `Rp ${item.amount.toLocaleString('id-ID')}`,
-          item.sourceOfFund,
-          item.estimatedWeek
+          item.sourceOfFund
         ]);
       
       if (routineData.length > 0) {
         autoTable(doc, {
           startY: yPos,
-          head: [['Uraian', 'Vol', 'Satuan', 'Harga Satuan', 'Jumlah', 'Sumber', 'Waktu']],
+          head: [['Uraian', 'Vol', 'Satuan', 'Harga', 'Jumlah', 'Dana']],
           body: routineData,
           theme: 'striped',
           styles: { 
@@ -458,14 +457,13 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
           item.unit,
           `Rp ${item.unitPrice.toLocaleString('id-ID')}`,
           `Rp ${item.amount.toLocaleString('id-ID')}`,
-          item.sourceOfFund,
-          item.estimatedWeek
+          item.sourceOfFund
         ]);
       
       if (incidentalData.length > 0) {
         autoTable(doc, {
           startY: yPos,
-          head: [['Uraian', 'Vol', 'Satuan', 'Harga Satuan', 'Jumlah', 'Sumber', 'Waktu']],
+          head: [['Uraian', 'Vol', 'Satuan', 'Harga', 'Jumlah', 'Dana']],
           body: incidentalData,
           theme: 'striped',
           styles: { 
