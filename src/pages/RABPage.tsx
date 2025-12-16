@@ -367,6 +367,7 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
   }, [rabData, reviewComment, onRABSaved]);
 
   const handleDownloadPDF_v2 = useCallback(() => {
+    console.log('🚀🚀🚀 PDF DOWNLOAD STARTED - VERSION 2 - TIMESTAMP:', new Date().toISOString());
     const loadingToastId = showLoading('Membuat PDF...');
     try {
       const doc = new jsPDF({
@@ -374,6 +375,7 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
         unit: 'mm',
         format: [210, 330] // F4 size: 210mm x 330mm
       });
+      console.log('✅ jsPDF initialized with F4 format');
       
       // Title
       doc.setFontSize(16);
@@ -1279,7 +1281,7 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
           {/* Download Buttons for Foundation */}
           <div className="mb-6 flex flex-wrap gap-3">
             <button
-              onClick={handleDownloadPDF}
+              onClick={handleDownloadPDF_v2}
               className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center space-x-2"
               title="Download PDF"
             >
