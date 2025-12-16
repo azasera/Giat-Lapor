@@ -551,6 +551,11 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
       yPos += 10;
       
       // Add signatures section
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('TANDA TANGAN', doc.internal.pageSize.getWidth() / 2, yPos, { align: 'center' });
+      yPos += 8;
+      
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
       const currentDate = new Date().toLocaleDateString('id-ID', {
@@ -587,6 +592,8 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
       ];
       
       console.log('=== SIGNATURE SECTION START ===');
+      console.log('Current Y position before signatures:', yPos);
+      console.log('Page dimensions:', { width: pageWidth, height: doc.internal.pageSize.getHeight() });
       console.log('Signature data check:', {
         kabidUmum: !!rabData.signatureKabidUmum,
         bendahara: !!rabData.signatureBendaharaYayasan,
@@ -594,8 +601,13 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
         ketua: !!rabData.signatureKetuaYayasan,
         kepalaMTA: !!rabData.signatureKepalaMTA
       });
-      console.log('Signature Y position:', yPos);
-      console.log('Page width:', pageWidth, 'Available width:', availableWidth);
+      console.log('Signature layout:', { 
+        sigWidth, 
+        sigHeight, 
+        spacing, 
+        startX, 
+        availableWidth 
+      });
       
       signatures.forEach((sig, index) => {
         const xPos = startX + (index * spacing) + (spacing - sigWidth) / 2;
@@ -615,9 +627,16 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
         } else {
           // Draw a placeholder box if no signature
           console.log(`No signature data for ${sig.title}, drawing placeholder`);
-          doc.setDrawColor(200, 200, 200);
-          doc.setLineWidth(0.5);
+          doc.setDrawColor(150, 150, 150);
+          doc.setLineWidth(1);
           doc.rect(xPos, yPos, sigWidth, sigHeight);
+          
+          // Add "TTD" text in the middle of placeholder
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(150, 150, 150);
+          doc.text('TTD', xPos + (sigWidth / 2), yPos + (sigHeight / 2) + 2, { align: 'center' });
+          doc.setTextColor(0, 0, 0); // Reset to black
         }
         
         // Add name and title below signature
@@ -641,6 +660,9 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
           nameYPos += 3;
         });
       });
+      
+      console.log('=== SIGNATURE SECTION COMPLETE ===');
+      console.log('Y position after signatures:', yPos);
       
       // Add footer with additional info
       yPos += 40; // Space after signatures
