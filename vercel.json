@@ -18,7 +18,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' https://apis.google.com https://www.gstatic.com https://accounts.google.com https://accounts.google.com/gsi/client https://vercel.live https://*.vercel.live 'unsafe-inline' 'unsafe-eval'; script-src-elem 'self' https://apis.google.com https://www.gstatic.com https://accounts.google.com https://accounts.google.com/gsi/client https://vercel.live https://*.vercel.live 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://www.gstatic.com; connect-src 'self' https://accounts.google.com https://www.googleapis.com https://oauth2.googleapis.com https://eyubefxeblzvavriltao.supabase.co wss://eyubefxeblzvavriltao.supabase.co https://*.google.com https://*.googleapis.com https://content.googleapis.com https://content-sheets.googleapis.com https://content-people.googleapis.com https://api.openai.com https://vercel.live https://*.vercel.live wss://*.vercel.live; frame-src 'self' https://accounts.google.com https://content.googleapis.com https://content-sheets.googleapis.com https://content-people.googleapis.com https://*.google.com https://vercel.live https://*.vercel.live;"
+          "value": "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; script-src-elem 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; connect-src 'self' https: wss:; frame-src 'self' https:;"
         }
       ]
     }
