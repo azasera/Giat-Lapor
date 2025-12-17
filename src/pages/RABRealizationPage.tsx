@@ -2,7 +2,10 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import OptimizedInput from '../components/OptimizedInput';
 import { RABRealization, RealizationItem } from '../types/realization';
 import { RABData } from '../types/rab';
-import { ArrowLeft, Save, Send, Calendar } from 'lucide-react';
+import { ArrowLeft, Save, Send, Calendar, FileText, FileSpreadsheet } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 import { useNavigate } from 'react-router-dom';
 import { supabase, fetchRABs, saveRealizationToSupabase, submitRealizationToFoundation } from '../services/supabaseService';
 import { showSuccess, showError, showLoading, dismissToast } from '../utils/toast';
@@ -176,6 +179,202 @@ const RABRealizationPage: React.FC<RABRealizationPageProps> = ({
     }
   }, [realizationData, onRealizationSaved]);
 
+  const handleDownloadPDF = useCallback(() => {
+    if (!rabData) return;
+    
+    const loadingToastId = showLoading('Membuat PDF Realisasi...');
+    try {
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      // Title
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text('REALISASI ANGGARAN BELANJA', doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
+
+      // Institution Info
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Nama Lembaga: ${rabData.institutionName}`, 14, 25);
+      doc.text(`Periode: ${rabData.period}`, 14, 30);
+      doc.text(`Tahun: ${rabData.year}`, 14, 35);
+      doc.text(`Status: ${realizationData.status === 'submitted' ? 'Dikirim' : realizationData.status === 'approved' ? 'Disetujui' : realizationData.status === 'completed' ? 'Selesai' : 'Dalam Proses'}`, 14, 40);
+
+      let yPos = 50;
+
+      const formatCurrency = (amount: number) => `Rp ${amount.toLocaleString('id-ID')}`;
+
+      // Helper to process items
+      const processItems = (expenseItems: typeof rabData.routineExpenses) => {
+        return expenseItems
+          .map(expense => {
+            const realization = realizationData.realizationItems.find(r => r.expenseItemId === expense.id);
+            if (!realization) return null;
+            
+            const difference = expense.amount - (realization.actualAmount || 0);
+            return [
+               expense.description,
+               formatCurrency(expense.amount),
+               formatCurrency(realization.actualAmount || 0),
+               formatCurrency(difference),
+               realization.actualDate ? new Date(realization.actualDate).toLocaleDateString('id-ID') : '-',
+               realization.notes || '-'
+            ];
+          })
+          .filter(Boolean) as string[][];
+      };
+
+      // A. Belanja Rutin
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('A. Belanja Rutin', 14, yPos);
+      yPos += 5;
+
+      const routineData = processItems(rabData.routineExpenses);
+      
+      if (routineData.length > 0) {
+        autoTable(doc, {
+          startY: yPos,
+          head: [['Uraian', 'Rencana', 'Realisasi', 'Selisih', 'Tanggal', 'Catatan']],
+          body: routineData,
+          theme: 'striped',
+          styles: { fontSize: 8, cellPadding: 2 },
+          headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: 'bold' },
+          columnStyles: {
+            0: { cellWidth: 50 },
+            1: { cellWidth: 25, halign: 'right' },
+            2: { cellWidth: 25, halign: 'right' },
+            3: { cellWidth: 25, halign: 'right' },
+            4: { cellWidth: 25, halign: 'center' },
+            5: { cellWidth: 'auto' }
+          }
+        });
+        yPos = (doc as any).lastAutoTable.finalY + 5;
+      }
+
+      // B. Belanja Insidentil
+      doc.text('B. Belanja Insidentil', 14, yPos);
+      yPos += 5;
+
+      const incidentalData = processItems(rabData.incidentalExpenses);
+      
+      if (incidentalData.length > 0) {
+        autoTable(doc, {
+          startY: yPos,
+          head: [['Uraian', 'Rencana', 'Realisasi', 'Selisih', 'Tanggal', 'Catatan']],
+          body: incidentalData,
+          theme: 'striped',
+          styles: { fontSize: 8, cellPadding: 2 },
+          headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: 'bold' },
+          columnStyles: {
+            0: { cellWidth: 50 },
+            1: { cellWidth: 25, halign: 'right' },
+            2: { cellWidth: 25, halign: 'right' },
+            3: { cellWidth: 25, halign: 'right' },
+            4: { cellWidth: 25, halign: 'center' },
+            5: { cellWidth: 'auto' }
+          }
+        });
+        yPos = (doc as any).lastAutoTable.finalY + 10;
+      }
+
+      // Summary
+      doc.setFontSize(10);
+      doc.text(`Total Rencana: ${formatCurrency(realizationData.totalPlanned)}`, 14, yPos);
+      yPos += 5;
+      doc.text(`Total Realisasi: ${formatCurrency(realizationData.totalActual)}`, 14, yPos);
+      yPos += 5;
+      doc.text(`Total Selisih: ${formatCurrency(realizationData.variance)}`, 14, yPos);
+
+      // Save
+      const fileName = `Realisasi_${rabData.institutionName}_${rabData.period}_${rabData.year}.pdf`;
+      doc.save(fileName);
+      
+      dismissToast(loadingToastId);
+      showSuccess('PDF berhasil diunduh!');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      dismissToast(loadingToastId);
+      showError('Gagal membuat PDF.');
+    }
+  }, [rabData, realizationData]);
+
+  const handleDownloadExcel = useCallback(() => {
+    if (!rabData) return;
+
+    const loadingToastId = showLoading('Membuat Excel Realisasi...');
+    try {
+      const wb = XLSX.utils.book_new();
+
+      // Info
+      const data = [
+        ['REALISASI ANGGARAN BELANJA'],
+        [],
+        ['Nama Lembaga', rabData.institutionName],
+        ['Periode', rabData.period],
+        ['Tahun', rabData.year],
+        ['Status', realizationData.status],
+        [],
+      ];
+
+      // Helper
+      const addRows = (title: string, items: typeof rabData.routineExpenses) => {
+        data.push([title]);
+        data.push(['Uraian', 'Rencana', 'Realisasi', 'Selisih', 'Tanggal', 'Catatan']);
+        
+        items.forEach(expense => {
+           const realization = realizationData.realizationItems.find(r => r.expenseItemId === expense.id);
+           if (realization) {
+             data.push([
+               expense.description,
+               expense.amount,
+               realization.actualAmount || 0,
+               expense.amount - (realization.actualAmount || 0),
+               realization.actualDate || '-',
+               realization.notes || '-'
+             ]);
+           }
+        });
+        data.push([]);
+      };
+
+      addRows('A. BELANJA RUTIN', rabData.routineExpenses);
+      addRows('B. BELANJA INSIDENTIL', rabData.incidentalExpenses);
+
+      // Summary
+      data.push(['RINGKASAN']);
+      data.push(['Total Rencana', realizationData.totalPlanned]);
+      data.push(['Total Realisasi', realizationData.totalActual]);
+      data.push(['Total Selisih', realizationData.variance]);
+
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      
+      // Formatting width
+      ws['!cols'] = [
+        { wch: 40 }, // Uraian
+        { wch: 15 }, // Rencana
+        { wch: 15 }, // Realisasi
+        { wch: 15 }, // Selisih
+        { wch: 15 }, // Tanggal
+        { wch: 30 }  // Catatan
+      ];
+
+      XLSX.utils.book_append_sheet(wb, ws, 'Realisasi');
+      const fileName = `Realisasi_${rabData.institutionName}_${rabData.period}_${rabData.year}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+
+      dismissToast(loadingToastId);
+      showSuccess('Excel berhasil diunduh!');
+    } catch (error) {
+       console.error('Error generating Excel:', error);
+       dismissToast(loadingToastId);
+       showError('Gagal membuat Excel.');
+    }
+  }, [rabData, realizationData]);
+
   if (isLoading) {
     return (
       <div className="min-h-[50vh] flex items-center justify-center">
@@ -198,7 +397,23 @@ const RABRealizationPage: React.FC<RABRealizationPageProps> = ({
         <h1 className="text-2xl font-bold text-center text-emerald-700 dark:text-emerald-400 flex-grow">
           REALISASI ANGGARAN BELANJA
         </h1>
-        <div className="w-24"></div>
+        <div className="flex bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+             <button
+              onClick={handleDownloadPDF}
+              className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-l-lg transition-colors tooltip tooltip-bottom"
+              title="Download PDF"
+            >
+              <FileText className="w-5 h-5" />
+            </button>
+            <div className="w-[1px] bg-gray-200 dark:bg-gray-700"></div>
+            <button
+              onClick={handleDownloadExcel}
+              className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-r-lg transition-colors tooltip tooltip-bottom"
+              title="Download Excel"
+            >
+              <FileSpreadsheet className="w-5 h-5" />
+            </button>
+        </div>
       </div>
 
       {/* Status Display */}
