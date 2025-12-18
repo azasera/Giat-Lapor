@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+﻿import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import OptimizedInput from '../components/OptimizedInput';
 import OptimizedSelect from '../components/OptimizedSelect';
 import { RABData, defaultRABData, ExpenseItem, sourceOfFundOptions, unitTypeOptions, weekNumberOptions, SourceOfFund, UnitType, WeekNumber } from '../types/rab';
@@ -141,7 +141,7 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
 
       if (isLastItemBeingFilled) {
         // Cek apakah sudah ada baris kosong di akhir
-        const hasEmptyRowAtEnd = updatedExpenses.length > 1 && 
+        const hasEmptyRowAtEnd = updatedExpenses.length > 1 &&
           updatedExpenses[updatedExpenses.length - 1].description === '' &&
           updatedExpenses[updatedExpenses.length - 1].volume === '' &&
           updatedExpenses[updatedExpenses.length - 1].unitPrice === '';
@@ -187,7 +187,7 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
     setRabData(prev => {
       const expenseKey = type === 'routine' ? 'routineExpenses' : 'incidentalExpenses';
       let filteredExpenses = prev[expenseKey].filter(item => item.id !== id);
-      
+
       // Pastikan selalu ada minimal 1 baris
       if (filteredExpenses.length === 0) {
         const newId = `${type === 'routine' ? 'RUT' : 'INC'}-${Date.now()}`;
@@ -202,7 +202,7 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
           estimatedWeek: type === 'incidental' ? 'Pekan 1' : '',
         }];
       }
-      
+
       return { ...prev, [expenseKey]: filteredExpenses };
     });
   }, []);
@@ -367,309 +367,340 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
   }, [rabData, reviewComment, onRABSaved]);
 
   const handleDownloadPDF_v3 = useCallback(() => {
-    console.log('🚀🚀🚀 PDF DOWNLOAD V3.2 STARTED - TIMESTAMP:', new Date().toISOString());
-    console.log('🔥 FORCE CACHE REFRESH - BUILD TIME:', '2025-12-16-11:45:00');
-    console.log('🆕 DEPLOYMENT FORCE UPDATE - VERSION 3.2 - SIGNATURE FIXED');
-    alert('PDF V3.2 - Signature Fixed! Check console for logs.');
     const loadingToastId = showLoading('Membuat PDF...');
     try {
+      // Use F4 size (21.0 x 33.0 cm)
       const doc = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: [210, 330] // F4 size: 210mm x 330mm
+        format: [210, 330]
       });
-      
-      // Title
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 14;
+      const contentWidth = pageWidth - (margin * 2);
+
+      // -- Helper for styling
+      const colors = {
+        primary: [22, 163, 74], // emerald-600
+        dark: [30, 41, 59],     // slate-800
+        text: [51, 65, 85],     // slate-700
+        lightRow: [248, 250, 252] // slate-50
+      };
+
+      // -- HEADER SECTION --
+      let yPos = 20;
+
+      // Main Title
+      doc.setFont('helvetica', 'bold');
       doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
-      doc.text('RENCANA ANGGARAN BELANJA', doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
-      
-      // VERSION INDICATOR IN PDF
-      doc.setFontSize(8);
-      doc.setTextColor(255, 0, 0);
-      doc.text('PDF VERSION 3.2 - SIGNATURE FIXED', doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
-      doc.setTextColor(0, 0, 0);
-      
-      // Institution Info
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Nama Lembaga: ${rabData.institutionName}`, 14, 25);
-      doc.text(`Periode: ${rabData.period}`, 14, 30);
-      doc.text(`Tahun: ${rabData.year}`, 14, 35);
-      doc.text(`Status: ${rabData.status === 'submitted' ? 'Dikirim' : rabData.status === 'approved' ? 'Disetujui' : rabData.status === 'rejected' ? 'Ditolak' : 'Draft'}`, 14, 40);
-      
-      let yPos = 50;
-      
-      // Belanja Rutin
+      doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2]);
+      doc.text('RENCANA ANGGARAN BELANJA (RAB)', pageWidth / 2, yPos, { align: 'center' });
+      yPos += 7;
+
+      // Subtitle / Institution Name
       doc.setFontSize(12);
+      doc.text(rabData.institutionName.toUpperCase(), pageWidth / 2, yPos, { align: 'center' });
+      yPos += 10;
+
+      // Metadata Table (Compact)
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+
+      const metaX = margin + 5;
+      const metaLabelWidth = 25;
+
+      // Left Column
+      doc.text('Periode', metaX, yPos);
+      doc.text(':', metaX + metaLabelWidth - 2, yPos);
+      doc.text(rabData.period, metaX + metaLabelWidth, yPos);
+
+      doc.text('Tahun', metaX, yPos + 5);
+      doc.text(':', metaX + metaLabelWidth - 2, yPos + 5);
+      doc.text(rabData.year, metaX + metaLabelWidth, yPos + 5);
+
+      // Right Column (Status)
+      const rightColX = pageWidth - margin - 50;
+      doc.text('Status', rightColX, yPos);
+      doc.text(':', rightColX + 13, yPos);
+
+      const statusText = rabData.status === 'submitted' ? 'Dikirim' :
+        rabData.status === 'approved' ? 'Disetujui' :
+          rabData.status === 'rejected' ? 'Ditolak' : 'Draft';
+
       doc.setFont('helvetica', 'bold');
-      doc.text('A. Belanja Rutin', 14, yPos);
-      yPos += 5;
-      
+      doc.text(statusText.toUpperCase(), rightColX + 15, yPos);
+      doc.setFont('helvetica', 'normal');
+
+      yPos += 15;
+
+      // Horizontal Line
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.5);
+      doc.line(margin, yPos - 5, pageWidth - margin, yPos - 5);
+
+      // -- A. BELANJA RUTIN --
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(0, 0, 0);
+      doc.text('A. BELANJA RUTIN', margin, yPos);
+      yPos += 4;
+
       const routineData = rabData.routineExpenses
         .filter(item => item.description.trim() !== '')
-        .map(item => [
-          item.description,
-          item.volume.toString(),
-          item.unit,
-          `Rp ${item.unitPrice.toLocaleString('id-ID')}`,
-          `Rp ${item.amount.toLocaleString('id-ID')}`,
-          item.sourceOfFund
-        ]);
-      
+        .map(item => {
+          if (item.amount === 0) {
+            return [
+              item.description,
+              '',
+              '',
+              '',
+              '',
+              ''
+            ];
+          }
+          return [
+            item.description,
+            item.volume.toString(),
+            item.unit,
+            `Rp ${item.unitPrice.toLocaleString('id-ID')}`,
+            `Rp ${item.amount.toLocaleString('id-ID')}`,
+            item.sourceOfFund
+          ];
+        });
+
       if (routineData.length > 0) {
         autoTable(doc, {
           startY: yPos,
-          head: [['Uraian', 'Vol', 'Satuan', 'Harga', 'Jumlah', 'Dana']],
+          head: [['Uraian', 'Vol', 'Sat', 'Harga Satuan', 'Jumlah', 'Sumber Dana']],
           body: routineData,
-          theme: 'striped',
-          styles: { 
-            fontSize: 7, 
-            cellPadding: 1.5,
-            overflow: 'linebreak'
+          theme: 'grid',
+          styles: {
+            fontSize: 9,
+            cellPadding: 2,
+            textColor: [50, 50, 50],
+            lineColor: [220, 220, 220],
+            lineWidth: 0.1,
           },
-          headStyles: { 
-            fillColor: [16, 185, 129], 
-            textColor: 255, 
-            fontStyle: 'bold', 
-            fontSize: 7
+          headStyles: {
+            fillColor: [22, 163, 74],
+            textColor: 255,
+            fontStyle: 'bold',
+            fontSize: 9,
+            halign: 'center'
           },
           columnStyles: {
-            0: { cellWidth: 40 }, // Uraian
-            1: { cellWidth: 10 }, // Vol
-            2: { cellWidth: 15 }, // Satuan
-            3: { cellWidth: 22 }, // Harga
-            4: { cellWidth: 25 }, // Jumlah
-            5: { cellWidth: 18 }  // Dana
+            0: { cellWidth: 'auto' },
+            1: { cellWidth: 12, halign: 'center' },
+            2: { cellWidth: 18, halign: 'center' },
+            3: { cellWidth: 30, halign: 'right' },
+            4: { cellWidth: 30, halign: 'right' },
+            5: { cellWidth: 25, halign: 'center' }
+          },
+          didParseCell: (data) => {
+            if (data.section === 'body' && data.row.index % 2 === 1) {
+              data.cell.styles.fillColor = [248, 250, 252];
+            }
           }
         });
-        
-        yPos = (doc as any).lastAutoTable.finalY + 5;
+        yPos = (doc as any).lastAutoTable.finalY + 2;
       }
-      
-      // Sub Total Rutin
-      doc.setFontSize(10);
+
+      // Sub Total Rutin (Right Aligned)
       doc.setFont('helvetica', 'bold');
-      doc.text(`Sub Total Belanja Rutin: Rp ${totalRoutineExpenses.toLocaleString('id-ID')}`, 14, yPos);
-      yPos += 10;
-      
-      // Belanja Insidentil
-      doc.setFontSize(12);
-      doc.text('B. Belanja Insidentil', 14, yPos);
-      yPos += 5;
-      
+      doc.setFontSize(9);
+      doc.text(`Sub Total Belanja Rutin:`, pageWidth - margin - 40, yPos + 4, { align: 'right' });
+      doc.text(`Rp ${totalRoutineExpenses.toLocaleString('id-ID')}`, pageWidth - margin, yPos + 4, { align: 'right' });
+      yPos += 12;
+
+      // -- B. BELANJA INSIDENTIL --
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.text('B. BELANJA INSIDENTIL', margin, yPos);
+      yPos += 4;
+
       const incidentalData = rabData.incidentalExpenses
         .filter(item => item.description.trim() !== '')
-        .map(item => [
-          item.description,
-          item.volume.toString(),
-          item.unit,
-          `Rp ${item.unitPrice.toLocaleString('id-ID')}`,
-          `Rp ${item.amount.toLocaleString('id-ID')}`,
-          item.sourceOfFund
-        ]);
-      
+        .map(item => {
+          if (item.amount === 0) {
+            return [
+              item.description,
+              '',
+              '',
+              '',
+              '',
+              '',
+              ''
+            ];
+          }
+          return [
+            item.description,
+            item.volume.toString(),
+            item.unit,
+            `Rp ${item.unitPrice.toLocaleString('id-ID')}`,
+            `Rp ${item.amount.toLocaleString('id-ID')}`,
+            item.sourceOfFund,
+            item.estimatedWeek || ''
+          ];
+        });
+
       if (incidentalData.length > 0) {
         autoTable(doc, {
           startY: yPos,
-          head: [['Uraian', 'Vol', 'Satuan', 'Harga', 'Jumlah', 'Dana']],
+          head: [['Uraian', 'Vol', 'Sat', 'Harga Satuan', 'Jumlah', 'Sumber Dana', 'Waktu']],
           body: incidentalData,
-          theme: 'striped',
-          styles: { 
-            fontSize: 7, 
-            cellPadding: 1.5,
-            overflow: 'linebreak'
+          theme: 'grid',
+          styles: {
+            fontSize: 9,
+            cellPadding: 2,
+            textColor: [50, 50, 50],
+            lineColor: [220, 220, 220],
+            lineWidth: 0.1,
           },
-          headStyles: { 
-            fillColor: [16, 185, 129], 
-            textColor: 255, 
-            fontStyle: 'bold', 
-            fontSize: 7
+          headStyles: {
+            fillColor: [22, 163, 74],
+            textColor: 255,
+            fontStyle: 'bold',
+            fontSize: 9,
+            halign: 'center'
           },
           columnStyles: {
-            0: { cellWidth: 40 }, // Uraian
-            1: { cellWidth: 10 }, // Vol
-            2: { cellWidth: 15 }, // Satuan
-            3: { cellWidth: 22 }, // Harga
-            4: { cellWidth: 25 }, // Jumlah
-            5: { cellWidth: 18 }  // Dana
+            0: { cellWidth: 'auto' },
+            1: { cellWidth: 12, halign: 'center' },
+            2: { cellWidth: 18, halign: 'center' },
+            3: { cellWidth: 30, halign: 'right' },
+            4: { cellWidth: 30, halign: 'right' },
+            5: { cellWidth: 20, halign: 'center' },
+            6: { cellWidth: 20, halign: 'center' }
+          },
+          didParseCell: (data) => {
+            if (data.section === 'body' && data.row.index % 2 === 1) {
+              data.cell.styles.fillColor = [248, 250, 252];
+            }
           }
         });
-        
-        yPos = (doc as any).lastAutoTable.finalY + 5;
+        yPos = (doc as any).lastAutoTable.finalY + 2;
       }
-      
+
       // Sub Total Insidentil
-      doc.setFontSize(10);
-      doc.text(`Sub Total Belanja Insidentil: Rp ${totalIncidentalExpenses.toLocaleString('id-ID')}`, 14, yPos);
-      yPos += 5;
-      
-      // Grand Total
       doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.text(`Sub Total Belanja Insidentil:`, pageWidth - margin - 40, yPos + 4, { align: 'right' });
+      doc.text(`Rp ${totalIncidentalExpenses.toLocaleString('id-ID')}`, pageWidth - margin, yPos + 4, { align: 'right' });
+      yPos += 8;
+
+      // GRAND TOTAL BOX
+      yPos += 5;
+      doc.setFillColor(240, 253, 244); // light green bg
+      doc.setDrawColor(22, 163, 74);   // green border
+      doc.rect(margin, yPos, contentWidth, 12, 'FD');
+
+      doc.setFontSize(11);
+      doc.setTextColor(0, 0, 0);
+      doc.text('TOTAL ANGGARAN', margin + 5, yPos + 8);
+
       doc.setFontSize(12);
-      doc.text(`TOTAL ANGGARAN: Rp ${(totalRoutineExpenses + totalIncidentalExpenses).toLocaleString('id-ID')}`, 14, yPos);
+      doc.setTextColor(21, 128, 61); // darker green text
+      doc.text(`Rp ${(totalRoutineExpenses + totalIncidentalExpenses).toLocaleString('id-ID')}`, pageWidth - margin - 5, yPos + 8, { align: 'right' });
       yPos += 20;
-      
-      // Add review comment if exists
+
+      // Notes Section (if any)
       if (rabData.reviewComment && rabData.reviewComment.trim() !== '') {
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
-        doc.text('CATATAN YAYASAN:', 14, yPos);
-        yPos += 5;
-        
-        doc.setFont('helvetica', 'normal');
         doc.setFontSize(9);
-        const commentLines = doc.splitTextToSize(rabData.reviewComment, 180);
-        commentLines.forEach((line: string) => {
-          doc.text(line, 14, yPos);
-          yPos += 4;
-        });
-        yPos += 10;
+        doc.setTextColor(180, 83, 9); // amber/orange
+        doc.text('CATATAN YAYASAN:', margin, yPos);
+        yPos += 4;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(50, 50, 50);
+        const commentLines = doc.splitTextToSize(rabData.reviewComment, contentWidth);
+        doc.text(commentLines, margin, yPos);
+        yPos += (commentLines.length * 4) + 10;
+      } else {
+        yPos += 5;
       }
-      
-      // SIGNATURE SECTION - SIMPLIFIED AND GUARANTEED TO WORK
-      console.log('🔥 ADDING SIGNATURE SECTION - Y Position:', yPos);
-      
-      // Check if we need a new page for signatures
-      if (yPos > 250) {
+
+      // -- SIGNATURE SECTION --
+
+      const sigHeight = 25;
+      const nameHeight = 10;
+      const totalSigBlockHeight = sigHeight + nameHeight + 20;
+
+      // Auto-page break for signatures if not enough space
+      if (yPos + totalSigBlockHeight > pageHeight - margin) {
         doc.addPage();
         yPos = 20;
       }
-      
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text('TANDA TANGAN', doc.internal.pageSize.getWidth() / 2, yPos, { align: 'center' });
-      yPos += 10;
-      
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
+
+      // Date
       const currentDate = new Date().toLocaleDateString('id-ID', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
       });
-      doc.text(`Pangkalpinang, ${currentDate}`, doc.internal.pageSize.getWidth() / 2, yPos, { align: 'center' });
-      yPos += 15;
-      
-      // Signature boxes - 5 signatures in a row
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const sigWidth = 32;
-      const sigHeight = 20;
-      const totalMargin = 14;
-      const availableWidth = pageWidth - (totalMargin * 2);
-      const spacing = availableWidth / 5;
-      
+      doc.setFontSize(9);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Pangkalpinang, ${currentDate}`, pageWidth - margin, yPos, { align: 'right' });
+      yPos += 10;
+
+      // Calculate spacing
       const signatures = [
         { data: rabData.signatureKabidUmum, name: 'Novan Herwando, S.E.', title: 'Kabid Umum' },
         { data: rabData.signatureBendaharaYayasan, name: 'Ikhwan Fadhillah, S.E.', title: 'Bendahara Yayasan' },
         { data: rabData.signatureSekretarisYayasan, name: 'Fathurrohman, S.E.', title: 'Sekretaris Yayasan' },
-        { data: rabData.signatureKetuaYayasan, name: 'Ustadz Ali Agustian Bahri, Lc.', title: 'Ketua Yayasan' },
-        { data: rabData.signatureKepalaMTA, name: 'Azali Abdul Ghani', title: 'Kepala MTA' }
+        { data: rabData.signatureKetuaYayasan, name: 'Ust. Ali Agustian Bahri, Lc.', title: 'Ketua Yayasan' },
+        { data: rabData.signatureKepalaMTA, name: 'Azali', title: 'Kepala MTA' }
       ];
-      
+
+      const colWidth = contentWidth / 5;
+
       signatures.forEach((sig, index) => {
-        const xPos = totalMargin + (index * spacing) + (spacing - sigWidth) / 2;
-        
-        // Draw signature box
-        doc.setDrawColor(0, 0, 0);
-        doc.setLineWidth(1);
-        doc.rect(xPos, yPos, sigWidth, sigHeight);
-        
-        // Add signature image if available
+        const xCenter = margin + (index * colWidth) + (colWidth / 2);
+        const ySigStart = yPos;
+
+        // Title
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Mengetahui,', xCenter, ySigStart, { align: 'center' });
+        doc.text(sig.title, xCenter, ySigStart + 3, { align: 'center' });
+
+        // Image
         if (sig.data) {
           try {
-            doc.addImage(sig.data, 'PNG', xPos + 2, yPos + 2, sigWidth - 4, sigHeight - 4);
-            console.log(`✅ Signature added for ${sig.title}`);
-          } catch (error) {
-            console.error(`❌ Error adding signature for ${sig.title}:`, error);
-            // Add placeholder text if image fails
-            doc.setFontSize(8);
-            doc.setFont('helvetica', 'normal');
-            doc.text('TTD', xPos + (sigWidth / 2), yPos + (sigHeight / 2) + 2, { align: 'center' });
-          }
-        } else {
-          // Add placeholder text
-          doc.setFontSize(8);
-          doc.setFont('helvetica', 'normal');
-          doc.setTextColor(100, 100, 100);
-          doc.text('TTD', xPos + (sigWidth / 2), yPos + (sigHeight / 2) + 2, { align: 'center' });
-          doc.setTextColor(0, 0, 0);
+            const imgW = 25;
+            const imgH = 15;
+            doc.addImage(sig.data, 'PNG', xCenter - (imgW / 2), ySigStart + 5, imgW, imgH);
+          } catch (e) { /* ignore */ }
         }
-        
-        // Add name and title below signature
-        const centerX = xPos + (sigWidth / 2);
-        doc.setFontSize(7);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0, 0, 0);
-        
+
         // Name
-        const nameLines = doc.splitTextToSize(sig.name, sigWidth);
-        let nameYPos = yPos + sigHeight + 4;
-        nameLines.forEach((line: string) => {
-          doc.text(line, centerX, nameYPos, { align: 'center' });
-          nameYPos += 3;
-        });
-        
-        // Title
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(6.5);
-        const titleLines = doc.splitTextToSize(sig.title, sigWidth);
-        titleLines.forEach((line: string) => {
-          doc.text(line, centerX, nameYPos, { align: 'center' });
-          nameYPos += 3;
-        });
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7);
+        const nameLines = doc.splitTextToSize(sig.name, colWidth - 2);
+        doc.text(nameLines, xCenter, ySigStart + 24, { align: 'center' });
       });
-      
-      console.log('✅ SIGNATURE SECTION COMPLETED');
-      
-      // Footer
-      yPos += 50;
-      if (yPos > 310) {
-        doc.addPage();
-        yPos = 20;
-      }
-      
-      doc.setDrawColor(200, 200, 200);
-      doc.setLineWidth(0.5);
-      doc.line(14, yPos, pageWidth - 14, yPos);
-      yPos += 5;
-      
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`PDF dibuat pada: ${new Date().toLocaleDateString('id-ID', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })}`, 14, yPos);
-      yPos += 4;
-      
-      doc.text(`ID RAB: ${rabData.id}`, 14, yPos);
-      yPos += 4;
-      
-      doc.text('© 2025 Lapor Giat - Sistem Pelaporan Kegiatan', 14, yPos);
-      
+
       // Save PDF
-      const fileName = `RAB_${rabData.institutionName}_${rabData.period}_${rabData.year}.pdf`;
+      const fileName = `RAB_${rabData.institutionName.replace(/[^a-zA-Z0-9]/g, '_')}_${rabData.period}_${rabData.year}.pdf`;
       doc.save(fileName);
-      
+
       dismissToast(loadingToastId);
-      showSuccess('PDF berhasil diunduh!');
-      console.log('✅ PDF DOWNLOAD COMPLETED SUCCESSFULLY');
+      showSuccess('PDF berhasil diunduh (Layout Baru)!');
     } catch (error) {
-      console.error('❌ Error generating PDF:', error);
+      console.error('âŒ Error generating PDF:', error);
       dismissToast(loadingToastId);
       showError('Gagal membuat PDF. Silakan coba lagi.');
     }
   }, [rabData, totalRoutineExpenses, totalIncidentalExpenses]);
-
   const handleDownloadExcel = useCallback(() => {
     const loadingToastId = showLoading('Membuat Excel...');
     try {
       // Create workbook
       const wb = XLSX.utils.book_new();
-      
+
       // Info Sheet
       const infoData = [
         ['RENCANA ANGGARAN BELANJA'],
@@ -680,11 +711,11 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
         ['Status', rabData.status === 'submitted' ? 'Dikirim' : rabData.status === 'approved' ? 'Disetujui' : rabData.status === 'rejected' ? 'Ditolak' : 'Draft'],
         []
       ];
-      
+
       // Belanja Rutin
       infoData.push(['A. BELANJA RUTIN']);
       infoData.push(['Uraian Kegiatan', 'Volume', 'Satuan', 'Harga Satuan', 'Jumlah', 'Sumber Dana', 'Perkiraan Waktu Belanja']);
-      
+
       rabData.routineExpenses
         .filter(item => item.description.trim() !== '')
         .forEach(item => {
@@ -698,15 +729,15 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
             item.estimatedWeek
           ]);
         });
-      
+
       infoData.push([]);
       infoData.push(['Sub Total Belanja Rutin', '', '', '', totalRoutineExpenses.toString()]);
       infoData.push([]);
-      
+
       // Belanja Insidentil
       infoData.push(['B. BELANJA INSIDENTIL']);
       infoData.push(['Uraian Kegiatan', 'Volume', 'Satuan', 'Harga Satuan', 'Jumlah', 'Sumber Dana', 'Perkiraan Waktu Belanja']);
-      
+
       rabData.incidentalExpenses
         .filter(item => item.description.trim() !== '')
         .forEach(item => {
@@ -720,15 +751,15 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
             item.estimatedWeek
           ]);
         });
-      
+
       infoData.push([]);
       infoData.push(['Sub Total Belanja Insidentil', '', '', '', totalIncidentalExpenses.toString()]);
       infoData.push([]);
       infoData.push(['TOTAL ANGGARAN', '', '', '', (totalRoutineExpenses + totalIncidentalExpenses).toString()]);
-      
+
       // Create worksheet
       const ws = XLSX.utils.aoa_to_sheet(infoData);
-      
+
       // Set column widths
       ws['!cols'] = [
         { wch: 40 }, // Uraian
@@ -739,10 +770,10 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
         { wch: 15 }, // Sumber Dana
         { wch: 20 }  // Waktu
       ];
-      
+
       // Add worksheet to workbook
       XLSX.utils.book_append_sheet(wb, ws, 'RAB');
-      
+
       // Weekly Summary Sheet
       const summaryData = [
         ['RINGKASAN KEBUTUHAN DANA PER PEKAN'],
@@ -754,7 +785,7 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
         ['Donasi', ...weeklySummary.donasi],
         ['Jumlah', ...weeklySummary.total]
       ];
-      
+
       const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
       wsSummary['!cols'] = [
         { wch: 15 },
@@ -764,13 +795,13 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
         { wch: 15 },
         { wch: 15 }
       ];
-      
+
       XLSX.utils.book_append_sheet(wb, wsSummary, 'Ringkasan Mingguan');
-      
+
       // Save file
       const fileName = `RAB_${rabData.institutionName}_${rabData.period}_${rabData.year}.xlsx`;
       XLSX.writeFile(wb, fileName);
-      
+
       dismissToast(loadingToastId);
       showSuccess('Excel berhasil diunduh!');
     } catch (error) {
@@ -839,30 +870,34 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
               </td>
               <td className="border border-gray-300 dark:border-gray-600 p-1 text-right bg-gray-50 dark:bg-gray-700">
                 <span className="text-xs font-medium text-gray-800 dark:text-gray-200">
-                  {item.amount.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}
+                  {item.amount > 0 ? item.amount.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : ''}
                 </span>
               </td>
               <td className="border border-gray-300 dark:border-gray-600 p-1">
-                <OptimizedSelect
-                  value={item.sourceOfFund}
-                  onChange={(val) => updateExpenseItem(type, item.id, 'sourceOfFund', val as SourceOfFund)}
-                  className="w-full p-1 text-xs border-none focus:ring-0 dark:bg-gray-800 dark:text-white"
-                  readOnly={!isEditingAllowedForExpenses || isSaving}
-                >
-                  <option value="">Pilih</option>
-                  {sourceOfFundOptions.map(option => <option key={option} value={option}>{option}</option>)}
-                </OptimizedSelect>
+                {item.amount > 0 && (
+                  <OptimizedSelect
+                    value={item.sourceOfFund}
+                    onChange={(val) => updateExpenseItem(type, item.id, 'sourceOfFund', val as SourceOfFund)}
+                    className="w-full p-1 text-xs border-none focus:ring-0 dark:bg-gray-800 dark:text-white"
+                    readOnly={!isEditingAllowedForExpenses || isSaving}
+                  >
+                    <option value="">Pilih</option>
+                    {sourceOfFundOptions.map(option => <option key={option} value={option}>{option}</option>)}
+                  </OptimizedSelect>
+                )}
               </td>
               <td className="border border-gray-300 dark:border-gray-600 p-1">
-                <OptimizedSelect
-                  value={item.estimatedWeek}
-                  onChange={(val) => updateExpenseItem(type, item.id, 'estimatedWeek', val as WeekNumber)}
-                  className="w-full p-1 text-xs border-none focus:ring-0 dark:bg-gray-800 dark:text-white"
-                  readOnly={!isEditingAllowedForExpenses || isSaving}
-                >
-                  <option value="">Pilih</option>
-                  {weekNumberOptions.map(option => <option key={option} value={option}>{option}</option>)}
-                </OptimizedSelect>
+                {item.amount > 0 && (
+                  <OptimizedSelect
+                    value={item.estimatedWeek}
+                    onChange={(val) => updateExpenseItem(type, item.id, 'estimatedWeek', val as WeekNumber)}
+                    className="w-full p-1 text-xs border-none focus:ring-0 dark:bg-gray-800 dark:text-white"
+                    readOnly={!isEditingAllowedForExpenses || isSaving}
+                  >
+                    <option value="">Pilih</option>
+                    {weekNumberOptions.map(option => <option key={option} value={option}>{option}</option>)}
+                  </OptimizedSelect>
+                )}
               </td>
               <td className="border border-gray-300 dark:border-gray-600 p-1 text-center">
                 {isEditingAllowedForExpenses && (
@@ -914,7 +949,6 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
         </button>
         <h1 className="text-2xl font-bold text-center text-emerald-700 dark:text-emerald-400 flex-grow">
           RENCANA ANGGARAN BELANJA
-          <span className="text-xs text-red-600 block font-bold">🔥 v3.2 - SIGNATURE FIXED 🔥</span>
         </h1>
         <div className="flex items-center space-x-2">
           <button
@@ -939,16 +973,15 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
       {/* RAB Status Display */}
       {rabData.id && (
         <div className="mb-6 text-center">
-          <span className={`px-4 py-2 rounded-full text-sm font-semibold ${
-            rabData.status === 'submitted' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+          <span className={`px-4 py-2 rounded-full text-sm font-semibold ${rabData.status === 'submitted' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
             rabData.status === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-            rabData.status === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
-            'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-          }`}>
+              rabData.status === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+            }`}>
             Status RAB: {rabData.status === 'submitted' ? 'Dikirim' :
-                         rabData.status === 'approved' ? 'Disetujui' :
-                         rabData.status === 'rejected' ? 'Ditolak' :
-                         'Draft'}
+              rabData.status === 'approved' ? 'Disetujui' :
+                rabData.status === 'rejected' ? 'Ditolak' :
+                  'Draft'}
           </span>
           {rabData.submittedAt && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Dikirim pada: {new Date(rabData.submittedAt).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>}
           {rabData.reviewedAt && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Ditinjau pada: {new Date(rabData.reviewedAt).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>}
@@ -965,7 +998,7 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
                 Mode Tampilan Saja
               </p>
               <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                {rabData.status === 'submitted' 
+                {rabData.status === 'submitted'
                   ? 'RAB sedang ditinjau oleh yayasan. Anda tidak dapat mengedit saat ini.'
                   : 'RAB sudah disetujui. Anda tidak dapat mengedit RAB yang sudah disetujui.'}
               </p>
@@ -1138,7 +1171,7 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
               readOnly={!canSignKetuaYayasan || isSaving}
               className="w-full max-w-[250px] mb-2"
             />
-            <p className="font-semibold">Ustadz Ali Agustian Bahri, Lc.</p>
+            <p className="font-semibold">Ust. Ali Agustian Bahri, Lc.</p>
             <p>Ketua Yayasan</p>
           </div>
           <div className="flex flex-col items-center">
@@ -1149,7 +1182,7 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
               readOnly={!canSignKepalaMTA || isSaving}
               className="w-full max-w-[250px] mb-2"
             />
-            <p className="font-semibold">Azali Abdul Ghani</p>
+            <p className="font-semibold">Azali</p>
             <p>Kepala MTA</p>
           </div>
         </div>
@@ -1159,7 +1192,7 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
       {(userRole === 'foundation' || userRole === 'admin') && (rabData.status === 'submitted' || rabData.status === 'approved' || rabData.status === 'rejected') && (
         <div className="mt-12 p-6 bg-gray-50 dark:bg-gray-700 rounded-lg shadow-inner border border-gray-200 dark:border-gray-600">
           <h3 className="text-lg font-bold mb-4 text-amber-600 dark:text-amber-400">Tinjauan Yayasan</h3>
-          
+
           {/* Download Buttons for Foundation */}
           <div className="mb-6 flex flex-wrap gap-3">
             <button

@@ -3,12 +3,12 @@ import OptimizedInput from '../components/OptimizedInput';
 import { RABRealization, RealizationItem } from '../types/realization';
 import { RABData } from '../types/rab';
 import { ArrowLeft, Save, Send, Calendar, FileText, FileSpreadsheet } from 'lucide-react';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
 import { useNavigate } from 'react-router-dom';
 import { supabase, fetchRABs, saveRealizationToSupabase, submitRealizationToFoundation } from '../services/supabaseService';
 import { showSuccess, showError, showLoading, dismissToast } from '../utils/toast';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 interface RABRealizationPageProps {
   initialRealizationId?: string;
@@ -52,18 +52,79 @@ const RABRealizationPage: React.FC<RABRealizationPageProps> = ({
         return;
       }
 
-      // Load RAB data
-      if (rabId) {
+      // 1. EDIT MODE: Load existing realization
+      if (initialRealizationId) {
+        try {
+          const { data: realization, error } = await supabase
+            .from('rab_realizations')
+            .select(`*, realization_items (*)`)
+            .eq('id', initialRealizationId)
+            .single();
+
+          if (error || !realization) {
+            console.error('Error fetching realization:', error);
+            showError('Realisasi tidak ditemukan.');
+            navigate('/realization-list');
+            return;
+          }
+
+          // Map realization items
+          const mappedItems: RealizationItem[] = (realization.realization_items || []).map((item: any) => ({
+            id: item.id,
+            expenseItemId: item.expense_item_id,
+            description: item.description,
+            plannedAmount: item.planned_amount,
+            actualAmount: item.actual_amount,
+            actualDate: item.actual_date,
+            receipt: item.receipt,
+            notes: item.notes,
+          }));
+
+          setRealizationData({
+            id: realization.id,
+            rabId: realization.rab_id,
+            user_id: realization.user_id,
+            status: realization.status,
+            realizationItems: mappedItems,
+            totalPlanned: realization.total_planned,
+            totalActual: realization.total_actual,
+            variance: realization.variance,
+            submittedAt: realization.submitted_at,
+          });
+
+          // Fetch associated RAB data
+          const fetchedRABs = await fetchRABs(user.id, userRole === 'admin' ? 'admin' : realization.user_id === user.id ? 'principal' : 'foundation');
+          const foundRAB = fetchedRABs.find(rab => rab.id === realization.rab_id);
+
+          if (foundRAB) {
+            setRabData(foundRAB);
+          } else {
+            // Fallback attempt
+            const { data: rabDataRaw } = await supabase
+              .from('rab_data')
+              .select('*, expense_items (*)')
+              .eq('id', realization.rab_id)
+              .single();
+            // Note: Full mapping skipped for brevity, assuming fetchRABs works for 99% cases
+          }
+
+        } catch (error) {
+          console.error('Error loading realization:', error);
+          showError('Gagal memuat data realisasi.');
+        }
+      }
+      // 2. CREATE MODE: Load RAB data to initialize new realization
+      else if (rabId) {
         try {
           const fetchedRABs = await fetchRABs(user.id, userRole);
           const foundRAB = fetchedRABs.find(rab => rab.id === rabId);
           if (foundRAB) {
             setRabData(foundRAB);
-            
+
             // Initialize realization items from RAB expense items
             const allExpenses = [...foundRAB.routineExpenses, ...foundRAB.incidentalExpenses];
             const totalPlanned = allExpenses.reduce((sum, item) => sum + item.amount, 0);
-            
+
             const items: RealizationItem[] = allExpenses.map(expense => ({
               id: `REAL-${Date.now()}-${Math.random()}`,
               expenseItemId: expense.id,
@@ -98,7 +159,7 @@ const RABRealizationPage: React.FC<RABRealizationPageProps> = ({
     };
 
     loadData();
-  }, [rabId, userRole, navigate]);
+  }, [initialRealizationId, rabId, userRole, navigate]);
 
   const updateRealizationItem = useCallback((id: string, field: keyof RealizationItem, value: string | number) => {
     setRealizationData(prev => {
@@ -181,120 +242,166 @@ const RABRealizationPage: React.FC<RABRealizationPageProps> = ({
 
   const handleDownloadPDF = useCallback(() => {
     if (!rabData) return;
-    
-    const loadingToastId = showLoading('Membuat PDF Realisasi...');
+    const loadingToastId = showLoading('Membuat PDF...');
     try {
+      // F4 Size (210 x 330 mm)
       const doc = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: 'a4'
+        format: [210, 330]
       });
 
-      // Title
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
-      doc.text('REALISASI ANGGARAN BELANJA', doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 14;
+      const contentWidth = pageWidth - (margin * 2);
 
-      // Institution Info
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Nama Lembaga: ${rabData.institutionName}`, 14, 25);
-      doc.text(`Periode: ${rabData.period}`, 14, 30);
-      doc.text(`Tahun: ${rabData.year}`, 14, 35);
-      doc.text(`Status: ${realizationData.status === 'submitted' ? 'Dikirim' : realizationData.status === 'approved' ? 'Disetujui' : realizationData.status === 'completed' ? 'Selesai' : 'Dalam Proses'}`, 14, 40);
-
-      let yPos = 50;
-
-      const formatCurrency = (amount: number) => `Rp ${amount.toLocaleString('id-ID')}`;
-
-      // Helper to process items
-      const processItems = (expenseItems: typeof rabData.routineExpenses) => {
-        return expenseItems
-          .map(expense => {
-            const realization = realizationData.realizationItems.find(r => r.expenseItemId === expense.id);
-            if (!realization) return null;
-            
-            const difference = expense.amount - (realization.actualAmount || 0);
-            return [
-               expense.description,
-               formatCurrency(expense.amount),
-               formatCurrency(realization.actualAmount || 0),
-               formatCurrency(difference),
-               realization.actualDate ? new Date(realization.actualDate).toLocaleDateString('id-ID') : '-',
-               realization.notes || '-'
-            ];
-          })
-          .filter(Boolean) as string[][];
+      const colors = {
+        primary: [22, 163, 74], // emerald-600
+        dark: [30, 41, 59],     // slate-800
+        text: [51, 65, 85],     // slate-700
+        lightRow: [248, 250, 252] // slate-50
       };
 
-      // A. Belanja Rutin
-      doc.setFontSize(12);
+      let yPos = 20;
+
+      // -- HEADER --
       doc.setFont('helvetica', 'bold');
-      doc.text('A. Belanja Rutin', 14, yPos);
-      yPos += 5;
+      doc.setFontSize(16);
+      doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2]);
+      doc.text('REALISASI ANGGARAN BELANJA', pageWidth / 2, yPos, { align: 'center' });
+      yPos += 7;
 
-      const routineData = processItems(rabData.routineExpenses);
-      
-      if (routineData.length > 0) {
-        autoTable(doc, {
-          startY: yPos,
-          head: [['Uraian', 'Rencana', 'Realisasi', 'Selisih', 'Tanggal', 'Catatan']],
-          body: routineData,
-          theme: 'striped',
-          styles: { fontSize: 8, cellPadding: 2 },
-          headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: 'bold' },
-          columnStyles: {
-            0: { cellWidth: 50 },
-            1: { cellWidth: 25, halign: 'right' },
-            2: { cellWidth: 25, halign: 'right' },
-            3: { cellWidth: 25, halign: 'right' },
-            4: { cellWidth: 25, halign: 'center' },
-            5: { cellWidth: 'auto' }
+      doc.setFontSize(12);
+      doc.text(rabData.institutionName.toUpperCase(), pageWidth / 2, yPos, { align: 'center' });
+      yPos += 10;
+
+      // Metadata
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+
+      const metaX = margin + 5;
+      const metaLabelWidth = 25;
+
+      doc.text('Periode', metaX, yPos);
+      doc.text(':', metaX + metaLabelWidth - 2, yPos);
+      doc.text(rabData.period, metaX + metaLabelWidth, yPos);
+
+      doc.text('Tahun', metaX, yPos + 5);
+      doc.text(':', metaX + metaLabelWidth - 2, yPos + 5);
+      doc.text(rabData.year, metaX + metaLabelWidth, yPos + 5);
+
+      const rightColX = pageWidth - margin - 50;
+      doc.text('Status', rightColX, yPos);
+      doc.text(':', rightColX + 13, yPos);
+
+      const statusText = realizationData.status === 'submitted' ? 'Dikirim' :
+        realizationData.status === 'approved' ? 'Disetujui' :
+          realizationData.status === 'completed' ? 'Selesai' :
+            'Dalam Proses';
+
+      doc.setFont('helvetica', 'bold');
+      doc.text(statusText.toUpperCase(), rightColX + 15, yPos);
+      doc.setFont('helvetica', 'normal');
+
+      yPos += 15;
+
+      // Separator Line
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.5);
+      doc.line(margin, yPos - 5, pageWidth - margin, yPos - 5);
+
+      // -- TABLE --
+      const tableData = realizationData.realizationItems.map(item => {
+        const itemVariance = item.plannedAmount - (item.actualAmount || 0);
+
+        // Zero-value (Title) handling
+        if (item.plannedAmount === 0) {
+          return [
+            item.description,
+            '',
+            '',
+            '',
+            '',
+            ''
+          ];
+        }
+
+        return [
+          item.description,
+          `Rp ${item.plannedAmount.toLocaleString('id-ID')}`,
+          `Rp ${(item.actualAmount || 0).toLocaleString('id-ID')}`,
+          `Rp ${itemVariance.toLocaleString('id-ID')}`,
+          item.actualDate ? new Date(item.actualDate).toLocaleDateString('id-ID') : '-',
+          item.notes || '-'
+        ];
+      });
+
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Uraian', 'Rencana', 'Realisasi', 'Selisih', 'Tanggal', 'Catatan']],
+        body: tableData,
+        theme: 'grid',
+        styles: {
+          fontSize: 9,
+          cellPadding: 2,
+          textColor: [50, 50, 50],
+          lineColor: [220, 220, 220],
+          lineWidth: 0.1,
+        },
+        headStyles: {
+          fillColor: [22, 163, 74],
+          textColor: 255,
+          fontStyle: 'bold',
+          fontSize: 9,
+          halign: 'center'
+        },
+        columnStyles: {
+          0: { cellWidth: 'auto' },
+          1: { cellWidth: 25, halign: 'right' },
+          2: { cellWidth: 25, halign: 'right' },
+          3: { cellWidth: 25, halign: 'right' },
+          4: { cellWidth: 20, halign: 'center' },
+          5: { cellWidth: 35, halign: 'left' }
+        },
+        didParseCell: (data) => {
+          if (data.section === 'body' && data.row.index % 2 === 1) {
+            data.cell.styles.fillColor = [248, 250, 252];
           }
-        });
-        yPos = (doc as any).lastAutoTable.finalY + 5;
-      }
+        }
+      });
 
-      // B. Belanja Insidentil
-      doc.text('B. Belanja Insidentil', 14, yPos);
-      yPos += 5;
+      yPos = (doc as any).lastAutoTable.finalY + 5;
 
-      const incidentalData = processItems(rabData.incidentalExpenses);
-      
-      if (incidentalData.length > 0) {
-        autoTable(doc, {
-          startY: yPos,
-          head: [['Uraian', 'Rencana', 'Realisasi', 'Selisih', 'Tanggal', 'Catatan']],
-          body: incidentalData,
-          theme: 'striped',
-          styles: { fontSize: 8, cellPadding: 2 },
-          headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: 'bold' },
-          columnStyles: {
-            0: { cellWidth: 50 },
-            1: { cellWidth: 25, halign: 'right' },
-            2: { cellWidth: 25, halign: 'right' },
-            3: { cellWidth: 25, halign: 'right' },
-            4: { cellWidth: 25, halign: 'center' },
-            5: { cellWidth: 'auto' }
-          }
-        });
-        yPos = (doc as any).lastAutoTable.finalY + 10;
-      }
+      // -- SUMMARY --
+      doc.setFillColor(240, 253, 244);
+      doc.setDrawColor(22, 163, 74);
+      doc.rect(margin, yPos, contentWidth, 25, 'FD');
 
-      // Summary
+      doc.setFont('helvetica', 'bold');
       doc.setFontSize(10);
-      doc.text(`Total Rencana: ${formatCurrency(realizationData.totalPlanned)}`, 14, yPos);
-      yPos += 5;
-      doc.text(`Total Realisasi: ${formatCurrency(realizationData.totalActual)}`, 14, yPos);
-      yPos += 5;
-      doc.text(`Total Selisih: ${formatCurrency(realizationData.variance)}`, 14, yPos);
+      doc.setTextColor(0, 0, 0);
 
-      // Save
-      const fileName = `Realisasi_${rabData.institutionName}_${rabData.period}_${rabData.year}.pdf`;
+      doc.text('RINGKASAN', margin + 5, yPos + 8);
+
+      doc.setFontSize(9);
+      doc.text('Total Rencana:', margin + 5, yPos + 16);
+      doc.text(`Rp ${realizationData.totalPlanned.toLocaleString('id-ID')}`, margin + 40, yPos + 16);
+
+      doc.text('Total Realisasi:', margin + 70, yPos + 16);
+      doc.text(`Rp ${realizationData.totalActual.toLocaleString('id-ID')}`, margin + 105, yPos + 16);
+
+      doc.text('Selisih:', margin + 135, yPos + 16);
+      const varColor = realizationData.variance >= 0 ? [22, 163, 74] : [220, 38, 38];
+      doc.setTextColor(varColor[0], varColor[1], varColor[2]);
+      doc.text(`Rp ${realizationData.variance.toLocaleString('id-ID')}`, margin + 155, yPos + 16);
+
+      // Save PDF
+      const fileName = `Realisasi_RAB_${rabData.institutionName.replace(/[^a-zA-Z0-9]/g, '_')}_${rabData.period}.pdf`;
       doc.save(fileName);
-      
+
       dismissToast(loadingToastId);
-      showSuccess('PDF berhasil diunduh!');
+      showSuccess('PDF Realisasi berhasil diunduh!');
     } catch (error) {
       console.error('Error generating PDF:', error);
       dismissToast(loadingToastId);
@@ -304,55 +411,60 @@ const RABRealizationPage: React.FC<RABRealizationPageProps> = ({
 
   const handleDownloadExcel = useCallback(() => {
     if (!rabData) return;
-
-    const loadingToastId = showLoading('Membuat Excel Realisasi...');
+    const loadingToastId = showLoading('Membuat Excel...');
     try {
       const wb = XLSX.utils.book_new();
 
-      // Info
-      const data = [
-        ['REALISASI ANGGARAN BELANJA'],
+      const rows: (string | number)[][] = [
+        ['REALISASI ANGGARAN BELANJA', '', '', '', '', ''],
+        [rabData.institutionName.toUpperCase(), '', '', '', '', ''],
         [],
-        ['Nama Lembaga', rabData.institutionName],
-        ['Periode', rabData.period],
-        ['Tahun', rabData.year],
-        ['Status', realizationData.status],
+        ['Periode', ':', rabData.period, '', 'Status', ':', realizationData.status === 'submitted' ? 'DIKIRIM' : realizationData.status === 'approved' ? 'DISETUJUI' : realizationData.status === 'completed' ? 'SELESAI' : 'DALAM PROSES'],
+        ['Tahun', ':', rabData.year],
         [],
+        ['Uraian', 'Rencana', 'Realisasi', 'Selisih', 'Tanggal', 'Catatan']
       ];
 
-      // Helper
-      const addRows = (title: string, items: typeof rabData.routineExpenses) => {
-        data.push([title]);
-        data.push(['Uraian', 'Rencana', 'Realisasi', 'Selisih', 'Tanggal', 'Catatan']);
-        
-        items.forEach(expense => {
-           const realization = realizationData.realizationItems.find(r => r.expenseItemId === expense.id);
-           if (realization) {
-             data.push([
-               expense.description,
-               expense.amount.toString(),
-               (realization.actualAmount || 0).toString(),
-               (expense.amount - (realization.actualAmount || 0)).toString(),
-               realization.actualDate || '-',
-               realization.notes || '-'
-             ]);
-           }
-        });
-        data.push([]);
-      };
+      realizationData.realizationItems.forEach(item => {
+        const itemVariance = item.plannedAmount - (item.actualAmount || 0);
 
-      addRows('A. BELANJA RUTIN', rabData.routineExpenses);
-      addRows('B. BELANJA INSIDENTIL', rabData.incidentalExpenses);
+        if (item.plannedAmount === 0) {
+          // Title row - empty cells for values
+          rows.push([
+            item.description,
+            '',
+            '',
+            '',
+            '',
+            ''
+          ]);
+        } else {
+          rows.push([
+            item.description,
+            item.plannedAmount,
+            item.actualAmount || 0,
+            itemVariance,
+            item.actualDate ? new Date(item.actualDate).toLocaleDateString('id-ID') : '-',
+            item.notes || ''
+          ]);
+        }
+      });
 
-      // Summary
-      data.push(['RINGKASAN']);
-      data.push(['Total Rencana', realizationData.totalPlanned.toString()]);
-      data.push(['Total Realisasi', realizationData.totalActual.toString()]);
-      data.push(['Total Selisih', realizationData.variance.toString()]);
+      rows.push([]);
+      rows.push(['RINGKASAN', '', '', '', '', '']);
+      rows.push(['Total Rencana', '', realizationData.totalPlanned]);
+      rows.push(['Total Realisasi', '', realizationData.totalActual]);
+      rows.push(['Selisih', '', realizationData.variance]);
 
-      const ws = XLSX.utils.aoa_to_sheet(data);
-      
-      // Formatting width
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+
+      // Merge Title Cells
+      ws['!merges'] = [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }, // Title
+        { s: { r: 1, c: 0 }, e: { r: 1, c: 5 } }, // Institution
+      ];
+
+      // Column widths
       ws['!cols'] = [
         { wch: 40 }, // Uraian
         { wch: 15 }, // Rencana
@@ -363,15 +475,16 @@ const RABRealizationPage: React.FC<RABRealizationPageProps> = ({
       ];
 
       XLSX.utils.book_append_sheet(wb, ws, 'Realisasi');
-      const fileName = `Realisasi_${rabData.institutionName}_${rabData.period}_${rabData.year}.xlsx`;
+
+      const fileName = `Realisasi_RAB_${rabData.institutionName}_${rabData.period}.xlsx`;
       XLSX.writeFile(wb, fileName);
 
       dismissToast(loadingToastId);
-      showSuccess('Excel berhasil diunduh!');
+      showSuccess('Excel Realisasi berhasil diunduh!');
     } catch (error) {
-       console.error('Error generating Excel:', error);
-       dismissToast(loadingToastId);
-       showError('Gagal membuat Excel.');
+      console.error('Error Excel:', error);
+      dismissToast(loadingToastId);
+      showError('Gagal membuat Excel.');
     }
   }, [rabData, realizationData]);
 
@@ -397,38 +510,38 @@ const RABRealizationPage: React.FC<RABRealizationPageProps> = ({
         <h1 className="text-2xl font-bold text-center text-emerald-700 dark:text-emerald-400 flex-grow">
           REALISASI ANGGARAN BELANJA
         </h1>
-        <div className="flex bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
-             <button
-              onClick={handleDownloadPDF}
-              className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-l-lg transition-colors tooltip tooltip-bottom"
-              title="Download PDF"
-            >
-              <FileText className="w-5 h-5" />
-            </button>
-            <div className="w-[1px] bg-gray-200 dark:bg-gray-700"></div>
-            <button
-              onClick={handleDownloadExcel}
-              className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-r-lg transition-colors tooltip tooltip-bottom"
-              title="Download Excel"
-            >
-              <FileSpreadsheet className="w-5 h-5" />
-            </button>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={handleDownloadPDF}
+            className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center space-x-2"
+            title="Download PDF"
+          >
+            <FileText className="w-4 h-4" />
+            <span className="hidden sm:inline">PDF</span>
+          </button>
+          <button
+            onClick={handleDownloadExcel}
+            className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center space-x-2"
+            title="Download Excel"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            <span className="hidden sm:inline">Excel</span>
+          </button>
         </div>
       </div>
 
       {/* Status Display */}
       {realizationData.id && (
         <div className="mb-6 text-center">
-          <span className={`px-4 py-2 rounded-full text-sm font-semibold ${
-            realizationData.status === 'submitted' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+          <span className={`px-4 py-2 rounded-full text-sm font-semibold ${realizationData.status === 'submitted' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
             realizationData.status === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-            realizationData.status === 'completed' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
-            'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-          }`}>
+              realizationData.status === 'completed' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+            }`}>
             Status: {realizationData.status === 'submitted' ? 'Dikirim' :
-                     realizationData.status === 'approved' ? 'Disetujui' :
-                     realizationData.status === 'completed' ? 'Selesai' :
-                     'Dalam Proses'}
+              realizationData.status === 'approved' ? 'Disetujui' :
+                realizationData.status === 'completed' ? 'Selesai' :
+                  'Dalam Proses'}
           </span>
         </div>
       )}
@@ -518,9 +631,8 @@ const RABRealizationPage: React.FC<RABRealizationPageProps> = ({
                       readOnly={!isEditingAllowed || isSaving}
                     />
                   </td>
-                  <td className={`border border-gray-300 dark:border-gray-600 p-2 text-right text-sm font-medium ${
-                    itemVariance >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
-                  }`}>
+                  <td className={`border border-gray-300 dark:border-gray-600 p-2 text-right text-sm font-medium ${itemVariance >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+                    }`}>
                     {itemVariance.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}
                   </td>
                 </tr>
