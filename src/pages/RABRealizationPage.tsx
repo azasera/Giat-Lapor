@@ -330,9 +330,9 @@ const RABRealizationPage: React.FC<RABRealizationPageProps> = ({
            if (realization) {
              data.push([
                expense.description,
-               expense.amount,
-               realization.actualAmount || 0,
-               expense.amount - (realization.actualAmount || 0),
+               expense.amount.toString(),
+               (realization.actualAmount || 0).toString(),
+               (expense.amount - (realization.actualAmount || 0)).toString(),
                realization.actualDate || '-',
                realization.notes || '-'
              ]);
@@ -346,9 +346,9 @@ const RABRealizationPage: React.FC<RABRealizationPageProps> = ({
 
       // Summary
       data.push(['RINGKASAN']);
-      data.push(['Total Rencana', realizationData.totalPlanned]);
-      data.push(['Total Realisasi', realizationData.totalActual]);
-      data.push(['Total Selisih', realizationData.variance]);
+      data.push(['Total Rencana', realizationData.totalPlanned.toString()]);
+      data.push(['Total Realisasi', realizationData.totalActual.toString()]);
+      data.push(['Total Selisih', realizationData.variance.toString()]);
 
       const ws = XLSX.utils.aoa_to_sheet(data);
       
