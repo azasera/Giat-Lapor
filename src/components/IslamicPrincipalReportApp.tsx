@@ -1052,11 +1052,17 @@ const IslamicPrincipalReportApp: React.FC<IslamicPrincipalReportAppProps> = ({ s
           )}
 
           {currentView === 'tahfidz-supervision-schedule' && (
-            <TahfidzSupervisionSchedulePage />
+            <TahfidzSupervisionSchedulePage
+              onBack={() => setCurrentView('dashboard')}
+              onNavigateToAnnual={() => setCurrentView('tahfidz-annual-schedule')}
+            />
           )}
 
           {currentView === 'tahfidz-annual-schedule' && (
-            <TahfidzAnnualSchedulePage />
+            <TahfidzAnnualSchedulePage
+              onBack={() => setCurrentView('dashboard')}
+              onNavigateToDaily={() => setCurrentView('tahfidz-supervision-schedule')}
+            />
           )}
 
           {currentView === 'tahfidz-foundation-reports' && (

@@ -12,7 +12,15 @@ import {
 import { supabase } from '../services/supabaseService';
 import { recommendFocusAreas, generateFocusNotes } from '../services/aiService';
 
-const TahfidzSupervisionSchedulePage: React.FC = () => {
+interface TahfidzSupervisionSchedulePageProps {
+  onBack?: () => void;
+  onNavigateToAnnual?: () => void;
+}
+
+const TahfidzSupervisionSchedulePage: React.FC<TahfidzSupervisionSchedulePageProps> = ({
+  onBack,
+  onNavigateToAnnual
+}) => {
   const [schedules, setSchedules] = useState<TahfidzSupervisionSchedule[]>([]);
   const [teachers, setTeachers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -257,7 +265,7 @@ const TahfidzSupervisionSchedulePage: React.FC = () => {
     <div className="container mx-auto p-6">
       {/* Back to Dashboard Button */}
       <button
-        onClick={() => window.location.href = '/'}
+        onClick={() => onBack ? onBack() : window.location.href = '/'}
         className="flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-4 font-medium"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -273,7 +281,7 @@ const TahfidzSupervisionSchedulePage: React.FC = () => {
         </div>
         <div className="flex gap-2 flex-wrap">
           <button
-            onClick={() => window.location.href = '/tahfidz-annual-schedule'}
+            onClick={() => onNavigateToAnnual ? onNavigateToAnnual() : window.location.href = '/tahfidz-annual-schedule'}
             className="flex items-center gap-2 bg-gradient-to-r from-amber-600 to-amber-700 text-white px-4 py-2 rounded-lg hover:from-amber-700 hover:to-amber-800 shadow-md font-medium"
           >
             <Calendar size={20} />

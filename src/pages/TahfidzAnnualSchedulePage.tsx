@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Download, Plus, Edit2, Trash2, Save, Eye, X } from 'lucide-react';
+import { Calendar, Download, Plus, Edit2, Trash2, Save, Eye, X, Upload } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { supabase, fetchUserProfile } from '../services/supabaseService';
 
 interface MonthlySchedule {
@@ -22,7 +23,16 @@ const MONTHS = [
   'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
 ];
 
-const TahfidzAnnualSchedulePage: React.FC = () => {
+interface TahfidzAnnualSchedulePageProps {
+  onBack?: () => void;
+  onNavigateToDaily?: () => void;
+}
+
+const TahfidzAnnualSchedulePage: React.FC<TahfidzAnnualSchedulePageProps> = ({
+  onBack,
+  onNavigateToDaily
+}) => {
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [teachers, setTeachers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string>('');
@@ -105,7 +115,7 @@ const TahfidzAnnualSchedulePage: React.FC = () => {
       return;
     }
 
-    const newScheduleData = MONTHS.map((month, index) => ({
+    const newScheduleData = MONTHS.map((month: string, index: number) => ({
       month,
       teachers: [] as string[]
     }));
@@ -230,6 +240,58 @@ const TahfidzAnnualSchedulePage: React.FC = () => {
     setScheduleData(MONTHS.map(month => ({ month, teachers: [] })));
   };
 
+  const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[][];
+
+        if (data.length < 2) {
+          alert('File Excel kosong atau tidak memiliki data.');
+          return;
+        }
+
+        // Search for month headers
+        const headers = data[0].map(h => String(h || '').trim().toLowerCase());
+        const newScheduleData = MONTHS.map(monthName => {
+          const monthLower = monthName.toLowerCase();
+          const colIndex = headers.findIndex(h => h.includes(monthLower));
+
+          const monthTeachers: string[] = [];
+          if (colIndex !== -1) {
+            // Extract teachers from subsequent rows
+            for (let i = 1; i < data.length; i++) {
+              const cellValue = String(data[i][colIndex] || '').trim();
+              if (cellValue && cellValue !== 'undefined') {
+                // Handle multiple teachers in one cell (separated by comma or newline)
+                const splitTeachers = cellValue.split(/[\n,;]/).map(t => t.trim()).filter(t => t !== '');
+                monthTeachers.push(...splitTeachers);
+              }
+            }
+          }
+          return { month: monthName, teachers: monthTeachers };
+        });
+
+        setScheduleData(newScheduleData);
+        alert('Berhasil mengimpor jadwal dari Excel!');
+
+        // Reset file input
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      } catch (error) {
+        console.error('Error importing Excel:', error);
+        alert('Gagal membaca file Excel. Pastikan formatnya benar.');
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
   const handleExportPDF = () => {
     // Simple print functionality
     window.print();
@@ -243,7 +305,7 @@ const TahfidzAnnualSchedulePage: React.FC = () => {
     <div className="container mx-auto p-6">
       {/* Back Button */}
       <button
-        onClick={() => window.location.href = '/'}
+        onClick={() => onBack ? onBack() : window.location.href = '/'}
         className="flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-4 font-medium"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -259,12 +321,26 @@ const TahfidzAnnualSchedulePage: React.FC = () => {
         </div>
         <div className="flex gap-2 flex-wrap">
           <button
-            onClick={() => window.location.href = '/tahfidz-supervision-schedule'}
+            onClick={() => onNavigateToDaily ? onNavigateToDaily() : window.location.href = '/tahfidz-supervision-schedule'}
             className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2 rounded-lg hover:from-blue-700 hover:to-blue-800 shadow-md font-medium"
           >
             <Calendar size={20} />
             Jadwal Per Tanggal
           </button>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 shadow-md font-medium"
+          >
+            <Upload size={20} />
+            Impor Excel
+          </button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImportExcel}
+            accept=".xlsx, .xls"
+            className="hidden"
+          />
           <button
             onClick={handleAutoDistribute}
             className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
@@ -340,45 +416,44 @@ const TahfidzAnnualSchedulePage: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {/* Calculate max rows needed */}
-              {Array.from({ length: Math.max(...scheduleData.map(m => m.teachers.length), 1) }).map((_, rowIndex) => (
-                <tr key={rowIndex}>
-                  {scheduleData.map((monthData, monthIndex) => (
-                    <td key={monthIndex} className="border-2 border-black px-2 py-3 align-top">
-                      {monthData.teachers[rowIndex] ? (
-                        <div className="flex items-center justify-between gap-1 group">
-                          <span className="text-sm flex-1">{monthData.teachers[rowIndex]}</span>
+              <tr>
+                {scheduleData.map((monthData, monthIndex) => (
+                  <td key={monthIndex} className="border-2 border-black px-1 py-2 align-top min-w-[100px]">
+                    <div className="space-y-1.5 mb-2">
+                      {monthData.teachers.map((teacher, teacherIndex) => (
+                        <div key={teacherIndex} className="flex items-center justify-between gap-1 group bg-blue-50/50 p-1 rounded-sm border border-blue-100/50">
+                          <span className="text-[11px] leading-tight flex-1">{teacher}</span>
                           <button
-                            onClick={() => handleRemoveTeacher(monthIndex, rowIndex)}
-                            className="text-red-600 hover:text-red-800 opacity-0 group-hover:opacity-100 print:hidden"
+                            onClick={() => handleRemoveTeacher(monthIndex, teacherIndex)}
+                            className="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 print:hidden transition-opacity"
                           >
-                            <Trash2 size={14} />
+                            <Trash2 size={12} />
                           </button>
                         </div>
-                      ) : (
-                        <div className="print:hidden">
-                          <select
-                            onChange={(e) => {
-                              if (e.target.value) {
-                                handleAddTeacher(monthIndex, e.target.value);
-                                e.target.value = '';
-                              }
-                            }}
-                            className="w-full text-xs border rounded px-1 py-1"
-                          >
-                            <option value="">+ Tambah</option>
-                            {teachers.map(teacher => (
-                              <option key={teacher.id} value={teacher.name}>
-                                {teacher.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              ))}
+                      ))}
+                    </div>
+
+                    <div className="print:hidden mt-2 pt-2 border-t border-gray-100">
+                      <select
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            handleAddTeacher(monthIndex, e.target.value);
+                            e.target.value = '';
+                          }
+                        }}
+                        className="w-full text-[10px] border border-dashed border-gray-300 rounded px-1 py-1 bg-gray-50 hover:bg-white focus:outline-none transition-colors"
+                      >
+                        <option value="">+ Guru</option>
+                        {teachers.map(teacher => (
+                          <option key={teacher.id} value={teacher.name}>
+                            {teacher.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </td>
+                ))}
+              </tr>
             </tbody>
           </table>
         </div>
@@ -411,10 +486,10 @@ const TahfidzAnnualSchedulePage: React.FC = () => {
           </p>
         ) : (
           <div className="grid gap-4">
-            {savedSchedules.filter(s => filterYear === 'all' || s.year === filterYear).map(schedule => {
+            {savedSchedules.filter(s => filterYear === 'all' || s.year === filterYear).map((schedule: AnnualSchedule) => {
               // Hitung total guru terjadwal
-              const totalTeachers = schedule.schedule_data.reduce((sum, month) => sum + month.teachers.length, 0);
-              const monthsWithTeachers = schedule.schedule_data.filter(m => m.teachers.length > 0).length;
+              const totalTeachers = schedule.schedule_data.reduce((sum: number, month: MonthlySchedule) => sum + month.teachers.length, 0);
+              const monthsWithTeachers = schedule.schedule_data.filter((m: MonthlySchedule) => m.teachers.length > 0).length;
 
               return (
                 <div key={schedule.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
@@ -511,10 +586,10 @@ const TahfidzAnnualSchedulePage: React.FC = () => {
                   </thead>
                   <tbody>
                     {Array.from({
-                      length: Math.max(...viewingSchedule.schedule_data.map(m => m.teachers.length), 1)
-                    }).map((_, rowIndex) => (
+                      length: Math.max(...viewingSchedule.schedule_data.map((m: MonthlySchedule) => m.teachers.length), 1)
+                    }).map((_, rowIndex: number) => (
                       <tr key={rowIndex}>
-                        {viewingSchedule.schedule_data.map((monthData, monthIndex) => (
+                        {viewingSchedule.schedule_data.map((monthData: MonthlySchedule, monthIndex: number) => (
                           <td key={monthIndex} className="border-2 border-black px-2 py-3 align-top">
                             {monthData.teachers[rowIndex] && (
                               <div className="text-sm">
@@ -536,19 +611,19 @@ const TahfidzAnnualSchedulePage: React.FC = () => {
                   <div>
                     <p className="text-gray-600">Total Supervisi</p>
                     <p className="text-2xl font-bold text-blue-600">
-                      {viewingSchedule.schedule_data.reduce((sum, m) => sum + m.teachers.length, 0)}
+                      {viewingSchedule.schedule_data.reduce((sum: number, m: MonthlySchedule) => sum + m.teachers.length, 0)}
                     </p>
                   </div>
                   <div>
                     <p className="text-gray-600">Bulan Terjadwal</p>
                     <p className="text-2xl font-bold text-green-600">
-                      {viewingSchedule.schedule_data.filter(m => m.teachers.length > 0).length}
+                      {viewingSchedule.schedule_data.filter((m: MonthlySchedule) => m.teachers.length > 0).length}
                     </p>
                   </div>
                   <div>
                     <p className="text-gray-600">Rata-rata per Bulan</p>
                     <p className="text-2xl font-bold text-purple-600">
-                      {(viewingSchedule.schedule_data.reduce((sum, m) => sum + m.teachers.length, 0) / 12).toFixed(1)}
+                      {(viewingSchedule.schedule_data.reduce((sum: number, m: MonthlySchedule) => sum + m.teachers.length, 0) / 12).toFixed(1)}
                     </p>
                   </div>
                   <div>
