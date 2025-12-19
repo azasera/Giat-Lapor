@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Upload, Users, Trash2, Plus, Download, FileSpreadsheet, Edit2 } from 'lucide-react';
 import { supabase } from '../services/supabaseService';
 import { showSuccess, showError, showLoading, dismissToast } from '../utils/toast';
@@ -11,7 +12,12 @@ interface Teacher {
   created_at: string;
 }
 
-const TeacherManagementPage: React.FC = () => {
+interface TeacherManagementPageProps {
+  onUpload?: () => void;
+}
+
+const TeacherManagementPage: React.FC<TeacherManagementPageProps> = ({ onUpload }) => {
+  const navigate = useNavigate();
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -222,15 +228,17 @@ const TeacherManagementPage: React.FC = () => {
   return (
     <div className="container mx-auto p-6">
       {/* Back Button */}
-      <button
-        onClick={() => window.location.href = '/'}
-        className="flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-4 font-medium"
-      >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </svg>
-        Kembali ke Dashboard
-      </button>
+      {!onUpload && (
+        <button
+          onClick={() => navigate('/')}
+          className="flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-4 font-medium"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Kembali ke Dashboard
+        </button>
+      )}
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
         <div>

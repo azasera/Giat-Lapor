@@ -13,12 +13,22 @@ import CreateReportPage from '../pages/CreateReportPage';
 import ReportsPage from '../pages/ReportsPage';
 import AnalyticsPage from '../pages/AnalyticsPage';
 import FoundationEvaluationPage from '../pages/FoundationEvaluationPage';
-import RABPage from '../pages/RABPage'; // Import RABPage
-import RABListPage from '../pages/RABListPage'; // Import RABListPage
-import RABRealizationPage from '../pages/RABRealizationPage'; // Import RABRealizationPage
-import RABRealizationListPage from '../pages/RABRealizationListPage'; // Import RABRealizationListPage
-import UsersPage from '../pages/UsersPage'; // Import UsersPage
-// ViewReportPage is now rendered directly by App.tsx router, so no need to import here
+import RABPage from '../pages/RABPage';
+import RABListPage from '../pages/RABListPage';
+import RABRealizationPage from '../pages/RABRealizationPage';
+import RABRealizationListPage from '../pages/RABRealizationListPage';
+import UsersPage from '../pages/UsersPage';
+import ViewReportPage from '../pages/ViewReportPage';
+import TahfidzSupervisionListPage from '../pages/TahfidzSupervisionListPage';
+import TahfidzSupervisionFormPage from '../pages/TahfidzSupervisionFormPage';
+import TahfidzSupervisionViewPage from '../pages/TahfidzSupervisionViewPage';
+import TahfidzSupervisionSchedulePage from '../pages/TahfidzSupervisionSchedulePage';
+import TahfidzAnnualSchedulePage from '../pages/TahfidzAnnualSchedulePage';
+import FoundationTahfidzReportPage from '../pages/FoundationTahfidzReportPage';
+import TeacherManagementPage from '../pages/TeacherManagementPage';
+import TeachersUploadPage from '../pages/TeachersUploadPage';
+import MemoListPage from '../pages/MemoListPage';
+import MemoFormPage from '../pages/MemoFormPage';
 
 // Import types and constants
 import { ReportData, Activity, Achievement, DetailedEvaluationItem, allDetailedEvaluationItems, activityCategories } from '../types/report';
@@ -28,8 +38,32 @@ interface IslamicPrincipalReportAppProps {
   session: Session;
 }
 
+type AppView =
+  | 'dashboard'
+  | 'create'
+  | 'reports'
+  | 'analytics'
+  | 'foundation-evaluation'
+  | 'rab-list'
+  | 'rab-form'
+  | 'realization-list'
+  | 'realization-form'
+  | 'users'
+  | 'view-report'
+  | 'tahfidz-supervision'
+  | 'tahfidz-supervision-form'
+  | 'tahfidz-supervision-view'
+  | 'tahfidz-supervision-schedule'
+  | 'tahfidz-annual-schedule'
+  | 'tahfidz-foundation-reports'
+  | 'teachers'
+  | 'teachers-upload'
+  | 'memo-list'
+  | 'memo-form';
+
 const IslamicPrincipalReportApp: React.FC<IslamicPrincipalReportAppProps> = ({ session }) => {
-  const [currentView, setCurrentView] = useState<'dashboard' | 'create' | 'reports' | 'analytics' | 'foundation-evaluation' | 'rab-list' | 'rab-form' | 'realization-list' | 'realization-form' | 'users'>('dashboard'); // Added realization views
+  const [currentView, setCurrentView] = useState<AppView>('dashboard');
+  const [viewParams, setViewParams] = useState<Record<string, any>>({});
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // State for sidebar collapse - default false for mobile
   const [reports, setReports] = useState<ReportData[]>([]);
@@ -55,6 +89,7 @@ const IslamicPrincipalReportApp: React.FC<IslamicPrincipalReportAppProps> = ({ s
   const [currentRABId, setCurrentRABId] = useState<string | undefined>(undefined); // State to hold RAB ID for editing
   const [currentRealizationId, setCurrentRealizationId] = useState<string | undefined>(undefined); // State for realization editing
   const [selectedRABForRealization, setSelectedRABForRealization] = useState<string | undefined>(undefined); // RAB ID for new realization
+  const [currentMemoId, setCurrentMemoId] = useState<string | undefined>(undefined);
   // const [selectedReportIdForView, setSelectedReportIdForView] = useState<string | null>(null); // Removed: ViewReportPage gets ID from URL
 
   const navigate = useNavigate(); // Initialize useNavigate
@@ -312,10 +347,25 @@ const IslamicPrincipalReportApp: React.FC<IslamicPrincipalReportAppProps> = ({ s
 
   // --- View Report Specific Callbacks ---
   const handleViewReport = useCallback((reportId: string) => {
-    // setSelectedReportIdForView(reportId); // Removed
-    // setCurrentView('view-report'); // Removed
-    navigate(`/reports/${reportId}`); // Navigate to the new route
-  }, [navigate]);
+    setViewParams({ reportId });
+    setCurrentView('view-report');
+  }, []);
+
+  // --- Tahfidz Supervision Specific Callbacks ---
+  const handleViewTahfidzSupervision = useCallback((id: string) => {
+    setViewParams({ id });
+    setCurrentView('tahfidz-supervision-view');
+  }, []);
+
+  const handleEditTahfidzSupervision = useCallback((id: string) => {
+    setViewParams({ id });
+    setCurrentView('tahfidz-supervision-form');
+  }, []);
+
+  const handleCreateTahfidzSupervision = useCallback(() => {
+    setViewParams({});
+    setCurrentView('tahfidz-supervision-form');
+  }, []);
 
   // --- Effects ---
 
@@ -549,48 +599,71 @@ const IslamicPrincipalReportApp: React.FC<IslamicPrincipalReportAppProps> = ({ s
 
   return (
     <div className={`min-h-screen ${isDarkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
-      {/* Top Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 shadow-lg border-b border-emerald-200 dark:border-emerald-700">
-        <div className="flex justify-between items-center h-14 sm:h-16 px-4">
-          <div className="flex items-center space-x-3">
+      {/* Top Header - Glassmorphism UI */}
+      <header className={`fixed top-0 right-0 left-0 z-30 transition-all duration-300 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-200 dark:border-slate-800 ${isSidebarOpen ? 'lg:left-64' : 'lg:left-64'
+        }`}>
+        <div className="flex justify-between items-center h-16 sm:h-20 px-4 sm:px-8">
+          <div className="flex items-center space-x-4">
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2 text-gray-600 hover:text-emerald-600 dark:text-gray-300 dark:hover:text-emerald-400 transition-colors"
+              className="lg:hidden p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
               title={isSidebarOpen ? 'Tutup Menu' : 'Buka Menu'}
             >
-              {isSidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              <Menu className="w-6 h-6" />
             </button>
-            <img src="/Lagi_ikon.png" alt="Lapor Giat Icon" className="w-6 h-6 sm:w-8 sm:h-8" />
-            <h1 className="text-lg sm:text-xl font-bold text-emerald-600">Lapor Giat</h1>
+            <div className="lg:hidden flex items-center space-x-2">
+              <img src="/Lagi_ikon.png" alt="Lapor Giat Icon" className="w-8 h-8" />
+              <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">Lapor Giat</h1>
+            </div>
+
+            {/* Breadcrumb or Title for desktop */}
+            <div className="hidden lg:block">
+              <h2 className="text-xs font-bold text-emerald-600 uppercase tracking-[0.2em] mb-1">
+                {currentView.replace(/-/g, ' ')}
+              </h2>
+              <p className="text-xl font-extrabold text-slate-800 dark:text-white tracking-tight">
+                {(() => {
+                  switch (currentView) {
+                    case 'dashboard': return 'Beranda Utama';
+                    case 'create': return 'Buat Laporan Baru';
+                    case 'reports': return 'Daftar Laporan';
+                    case 'analytics': return 'Statistik & Analitik';
+                    case 'foundation-evaluation': return 'Penilaian Yayasan';
+                    case 'rab-list': return 'Daftar RAB';
+                    case 'rab-form': return 'Formulir RAB';
+                    case 'realization-list': return 'Daftar Realisasi';
+                    case 'realization-form': return 'Formulir Realisasi';
+                    case 'users': return 'Manajemen Akun';
+                    case 'view-report': return 'Detail Laporan';
+                    case 'memo-list': return 'Daftar Memo Internal';
+                    case 'memo-form': return userRole === 'principal' ? 'Buat/Edit Memo' : 'Lihat Memo';
+                    case 'tahfidz-supervision': return 'Daftar Supervisi';
+                    case 'tahfidz-supervision-form': return 'Input Supervisi';
+                    case 'tahfidz-supervision-view': return 'Lihat Supervisi';
+                    case 'tahfidz-supervision-schedule': return 'Jadwal Supervisi';
+                    case 'tahfidz-annual-schedule': return 'Program Tahunan';
+                    case 'tahfidz-foundation-reports': return 'Laporan Tahfidz';
+                    case 'teachers': return 'Data Guru';
+                    case 'teachers-upload': return 'Unggah Data Guru';
+                    default: return (currentView as string).split('-').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+                  }
+                })()}
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center space-x-2 sm:space-x-4">
+          <div className="flex items-center space-x-3 sm:space-x-6">
             <GoogleAuth
               onAuthChange={(signedIn) => {
                 setIsGoogleSignedIn(signedIn);
               }}
             />
 
-            {/* User Info */}
-            {userProfile && (
-              <div className="hidden md:flex items-center space-x-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                <UserCircle className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-                <div className="flex flex-col">
-                  <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">
-                    {userProfile.full_name}
-                  </span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                    {userRole === 'principal' ? 'Kepala Sekolah' :
-                      userRole === 'foundation' ? 'Yayasan' :
-                        'Administrator'}
-                  </span>
-                </div>
-              </div>
-            )}
+            <div className="h-8 w-[1px] bg-gray-200 dark:bg-slate-700 hidden sm:block"></div>
 
             <button
               onClick={() => setIsDarkMode(!isDarkMode)}
-              className="p-2 text-gray-600 hover:text-emerald-600 dark:text-gray-300 transition-colors"
+              className="p-2.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800 dark:text-gray-400 rounded-xl transition-all hover:scale-110"
               title={isDarkMode ? 'Mode Terang' : 'Mode Gelap'}
             >
               {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
@@ -598,10 +671,10 @@ const IslamicPrincipalReportApp: React.FC<IslamicPrincipalReportAppProps> = ({ s
 
             <button
               onClick={handleSignOut}
-              className="flex items-center space-x-2 px-3 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              className="group flex items-center space-x-2 px-4 py-2.5 text-sm font-bold bg-red-50 hover:bg-red-600 text-red-600 hover:text-white rounded-xl transition-all duration-300 border border-red-100 hover:border-red-600 shadow-sm"
               disabled={isLoading}
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
               <span className="hidden sm:inline">Keluar</span>
             </button>
           </div>
@@ -617,238 +690,252 @@ const IslamicPrincipalReportApp: React.FC<IslamicPrincipalReportAppProps> = ({ s
       )}
 
       {/* Vertical Sidebar */}
-      <aside className={`fixed left-0 top-14 sm:top-16 bottom-0 z-40 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        } w-64 lg:w-64`}>
-        <nav className="h-full overflow-y-auto py-4">
-          {/* User Info in Sidebar */}
-          {userProfile && isSidebarOpen && (
-            <div className="px-4 pb-4 mb-4 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900 rounded-full flex items-center justify-center">
-                  <UserCircle className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">
-                    {userProfile.full_name}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                    {userProfile.email}
-                  </p>
-                  <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">
-                    {userRole === 'principal' ? 'Kepala Sekolah' :
-                      userRole === 'foundation' ? 'Yayasan' :
-                        'Administrator'}
-                  </span>
+      <aside className={`fixed top-0 bottom-0 left-0 z-40 bg-[#1e293b] dark:bg-slate-950 text-white w-64 shadow-2xl transition-transform duration-300 ease-in-out lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}>
+        <div className="flex flex-col h-full">
+          {/* Sidebar Header - Static Name */}
+          <div className="px-6 py-8 border-b border-slate-700/50">
+            <h1 className="text-2xl font-bold tracking-tight text-white mb-1">Lapor Giat</h1>
+            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">LAPORAN KEPALA SEKOLAH</p>
+          </div>
+
+          <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1 custom-scrollbar">
+            {/* User Profile Mini (Always visible in static sidebar) */}
+            {userProfile && (
+              <div className="mb-8 px-2 py-4 bg-slate-800/50 rounded-xl border border-slate-700/30">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center border border-emerald-500/30">
+                    <User className="w-5 h-5 text-emerald-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-white truncate">{userProfile.full_name}</p>
+                    <p className="text-[11px] text-slate-400 truncate opacity-80">{userProfile.email}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* User Icon Only (Collapsed) */}
-          {userProfile && !isSidebarOpen && (
-            <div className="flex justify-center pb-4 mb-4 border-b border-gray-200 dark:border-gray-700">
-              <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900 rounded-full flex items-center justify-center">
-                <UserCircle className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-1 px-2">
             {/* Dashboard */}
             <button
-              onClick={() => setCurrentView('dashboard')}
-              className={`w-full flex items-center ${isSidebarOpen ? 'space-x-3 px-4' : 'justify-center px-2'} py-3 rounded-lg transition-colors ${currentView === 'dashboard'
-                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300'
-                : 'text-gray-600 hover:bg-gray-100 hover:text-emerald-600 dark:text-gray-300 dark:hover:bg-gray-700'
+              onClick={() => { setCurrentView('dashboard'); setViewParams({}); }}
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 group ${currentView === 'dashboard'
+                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20'
+                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                 }`}
-              title={!isSidebarOpen ? 'Dashboard' : ''}
             >
-              <BarChart3 className="w-5 h-5 flex-shrink-0" />
-              {isSidebarOpen && <span className="text-sm font-medium">Dashboard</span>}
+              <BarChart3 className={`w-5 h-5 flex-shrink-0 ${currentView === 'dashboard' ? 'text-white' : 'group-hover:text-emerald-400'}`} />
+              <span className="text-sm font-semibold">Dashboard</span>
             </button>
 
             {/* Buat Laporan */}
             {(userRole === 'principal' || userRole === 'admin') && (
               <button
-                onClick={() => {
-                  resetForm();
-                  setCurrentView('create');
-                }}
-                className={`w-full flex items-center ${isSidebarOpen ? 'space-x-3 px-4' : 'justify-center px-2'} py-3 rounded-lg transition-colors ${currentView === 'create'
-                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-emerald-600 dark:text-gray-300 dark:hover:bg-gray-700'
+                onClick={() => { resetForm(); setCurrentView('create'); setViewParams({}); }}
+                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 group ${currentView === 'create'
+                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20'
+                  : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                   }`}
-                title={!isSidebarOpen ? 'Buat Laporan' : ''}
               >
-                <FileText className="w-5 h-5 flex-shrink-0" />
-                {isSidebarOpen && <span className="text-sm font-medium">Buat Laporan</span>}
+                <FileText className={`w-5 h-5 flex-shrink-0 ${currentView === 'create' ? 'text-white' : 'group-hover:text-emerald-400'}`} />
+                <span className="text-sm font-semibold">Buat Laporan</span>
               </button>
             )}
 
             {/* Laporan */}
             <button
-              onClick={() => setCurrentView('reports')}
-              className={`w-full flex items-center ${isSidebarOpen ? 'space-x-3 px-4' : 'justify-center px-2'} py-3 rounded-lg transition-colors ${currentView === 'reports'
-                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300'
-                : 'text-gray-600 hover:bg-gray-100 hover:text-emerald-600 dark:text-gray-300 dark:hover:bg-gray-700'
+              onClick={() => { setCurrentView('reports'); setViewParams({}); }}
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 group ${currentView === 'reports' || currentView === 'view-report'
+                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20'
+                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                 }`}
-              title={!isSidebarOpen ? 'Laporan' : ''}
             >
-              <Save className="w-5 h-5 flex-shrink-0" />
-              {isSidebarOpen && <span className="text-sm font-medium">Laporan</span>}
+              <Save className={`w-5 h-5 flex-shrink-0 ${currentView === 'reports' || currentView === 'view-report' ? 'text-white' : 'group-hover:text-emerald-400'}`} />
+              <span className="text-sm font-semibold">Semua Laporan</span>
             </button>
+
+            <div className="pt-4 pb-2 px-2">
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Manajemen Keuangan</p>
+            </div>
 
             {/* RAB */}
             {(userRole === 'principal' || userRole === 'admin' || userRole === 'foundation') && (
               <button
-                onClick={() => setCurrentView('rab-list')}
-                className={`w-full flex items-center ${isSidebarOpen ? 'space-x-3 px-4' : 'justify-center px-2'} py-3 rounded-lg transition-colors ${currentView === 'rab-list' || currentView === 'rab-form'
-                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-emerald-600 dark:text-gray-300 dark:hover:bg-gray-700'
+                onClick={() => { setCurrentView('rab-list'); setViewParams({}); }}
+                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 group ${currentView === 'rab-list' || currentView === 'rab-form'
+                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20'
+                  : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                   }`}
-                title={!isSidebarOpen ? 'RAB' : ''}
               >
-                <DollarSign className="w-5 h-5 flex-shrink-0" />
-                {isSidebarOpen && <span className="text-sm font-medium">RAB</span>}
+                <DollarSign className={`w-5 h-5 flex-shrink-0 ${currentView === 'rab-list' || currentView === 'rab-form' ? 'text-white' : 'group-hover:text-emerald-400'}`} />
+                <span className="text-sm font-semibold">RAB</span>
               </button>
             )}
 
             {/* Realisasi */}
             {(userRole === 'principal' || userRole === 'admin' || userRole === 'foundation') && (
               <button
-                onClick={() => setCurrentView('realization-list')}
-                className={`w-full flex items-center ${isSidebarOpen ? 'space-x-3 px-4' : 'justify-center px-2'} py-3 rounded-lg transition-colors ${currentView === 'realization-list' || currentView === 'realization-form'
-                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-emerald-600 dark:text-gray-300 dark:hover:bg-gray-700'
+                onClick={() => { setCurrentView('realization-list'); setViewParams({}); }}
+                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 group ${currentView === 'realization-list' || currentView === 'realization-form'
+                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20'
+                  : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                   }`}
-                title={!isSidebarOpen ? 'Realisasi' : ''}
               >
-                <CheckCircle className="w-5 h-5 flex-shrink-0" />
-                {isSidebarOpen && <span className="text-sm font-medium">Realisasi</span>}
+                <CheckCircle className={`w-5 h-5 flex-shrink-0 ${currentView === 'realization-list' || currentView === 'realization-form' ? 'text-white' : 'group-hover:text-emerald-400'}`} />
+                <span className="text-sm font-semibold">Realisasi</span>
               </button>
             )}
 
+            {/* Memo Internal */}
+            {(userRole === 'principal' || userRole === 'admin' || userRole === 'foundation') && (
+              <button
+                onClick={() => { setCurrentView('memo-list'); setViewParams({}); }}
+                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 group ${currentView === 'memo-list' || currentView === 'memo-form'
+                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20'
+                  : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                  }`}
+              >
+                <FileText className={`w-5 h-5 flex-shrink-0 ${currentView === 'memo-list' || currentView === 'memo-form' ? 'text-white' : 'group-hover:text-emerald-400'}`} />
+                <span className="text-sm font-semibold">Memo Internal</span>
+              </button>
+            )}
+
+            <div className="pt-4 pb-2 px-2">
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Akademik & Guru</p>
+            </div>
+
             {/* Supervisi Tahfidz */}
             {(userRole === 'principal' || userRole === 'admin') && (
-              <>
+              <div className="space-y-1">
                 <button
-                  onClick={() => navigate('/tahfidz-supervision')}
-                  className={`w-full flex items-center ${isSidebarOpen ? 'space-x-3 px-4' : 'justify-center px-2'} py-3 rounded-lg transition-colors text-gray-600 hover:bg-gray-100 hover:text-emerald-600 dark:text-gray-300 dark:hover:bg-gray-700`}
-                  title={!isSidebarOpen ? 'Supervisi Tahfidz' : ''}
+                  onClick={() => { setCurrentView('tahfidz-supervision'); setViewParams({}); }}
+                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 group ${currentView.startsWith('tahfidz-supervision')
+                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20'
+                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                    }`}
                 >
-                  <Award className="w-5 h-5 flex-shrink-0" />
-                  {isSidebarOpen && <span className="text-sm font-medium">Supervisi Tahfidz</span>}
+                  <Award className={`w-5 h-5 flex-shrink-0 ${currentView.startsWith('tahfidz-supervision') ? 'text-white' : 'group-hover:text-emerald-400'}`} />
+                  <span className="text-sm font-semibold">Supervisi Tahfidz</span>
                 </button>
 
-                {/* Submenu Jadwal - Only show when sidebar is open */}
-                {isSidebarOpen && (
-                  <div className="ml-4 space-y-1">
-                    <button
-                      onClick={() => navigate('/teachers')}
-                      className="w-full flex items-center space-x-3 px-4 py-2 rounded-lg transition-colors text-sm text-gray-600 hover:bg-gray-100 hover:text-emerald-600 dark:text-gray-400 dark:hover:bg-gray-700"
-                    >
-                      <Users className="w-4 h-4 flex-shrink-0" />
-                      <span>Daftar Guru</span>
-                    </button>
-                    <button
-                      onClick={() => navigate('/tahfidz-supervision-schedule')}
-                      className="w-full flex items-center space-x-3 px-4 py-2 rounded-lg transition-colors text-sm text-gray-600 hover:bg-gray-100 hover:text-emerald-600 dark:text-gray-400 dark:hover:bg-gray-700"
-                    >
-                      <Calendar className="w-4 h-4 flex-shrink-0" />
-                      <span>Jadwal Per Tanggal</span>
-                    </button>
-                    <button
-                      onClick={() => navigate('/tahfidz-annual-schedule')}
-                      className="w-full flex items-center space-x-3 px-4 py-2 rounded-lg transition-colors text-sm text-gray-600 hover:bg-gray-100 hover:text-emerald-600 dark:text-gray-400 dark:hover:bg-gray-700"
-                    >
-                      <CalendarDays className="w-4 h-4 flex-shrink-0" />
-                      <span>Jadwal Tahunan</span>
-                    </button>
-                    <button
-                      onClick={() => navigate('/tahfidz-foundation-reports')}
-                      className="w-full flex items-center space-x-3 px-4 py-2 rounded-lg transition-colors text-sm text-gray-600 hover:bg-gray-100 hover:text-emerald-600 dark:text-gray-400 dark:hover:bg-gray-700"
-                    >
-                      <FileText className="w-4 h-4 flex-shrink-0" />
-                      <span>Laporan Yayasan</span>
-                    </button>
-                  </div>
-                )}
-              </>
+                <div className="ml-4 pl-4 border-l border-slate-700/50 space-y-1">
+                  <button
+                    onClick={() => { setCurrentView('teachers'); setViewParams({}); }}
+                    className={`w-full flex items-center space-x-3 px-4 py-2 rounded-lg transition-all duration-200 text-xs font-medium ${currentView === 'teachers' || currentView === 'teachers-upload'
+                      ? 'text-emerald-400 bg-emerald-500/10'
+                      : 'text-slate-500 hover:text-white hover:bg-slate-800/50'
+                      }`}
+                  >
+                    <Users className="w-4 h-4 flex-shrink-0" />
+                    <span>Daftar Guru</span>
+                  </button>
+                  <button
+                    onClick={() => { setCurrentView('tahfidz-supervision-schedule'); setViewParams({}); }}
+                    className={`w-full flex items-center space-x-3 px-4 py-2 rounded-lg transition-all duration-200 text-xs font-medium ${currentView === 'tahfidz-supervision-schedule'
+                      ? 'text-emerald-400 bg-emerald-500/10'
+                      : 'text-slate-500 hover:text-white hover:bg-slate-800/50'
+                      }`}
+                  >
+                    <Calendar className="w-4 h-4 flex-shrink-0" />
+                    <span>Jadwal Harian</span>
+                  </button>
+                  <button
+                    onClick={() => { setCurrentView('tahfidz-annual-schedule'); setViewParams({}); }}
+                    className={`w-full flex items-center space-x-3 px-4 py-2 rounded-lg transition-all duration-200 text-xs font-medium ${currentView === 'tahfidz-annual-schedule'
+                      ? 'text-emerald-400 bg-emerald-500/10'
+                      : 'text-slate-500 hover:text-white hover:bg-slate-800/50'
+                      }`}
+                  >
+                    <CalendarDays className="w-4 h-4 flex-shrink-0" />
+                    <span>Jadwal Tahunan</span>
+                  </button>
+                </div>
+              </div>
             )}
+
+            <div className="pt-4 pb-2 px-2">
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Yayasan & Sistem</p>
+            </div>
 
             {/* Penilaian Yayasan */}
             {(userRole === 'foundation' || userRole === 'admin' || userRole === 'principal') && (
               <>
                 <button
-                  onClick={() => setCurrentView('foundation-evaluation')}
-                  className={`w-full flex items-center ${isSidebarOpen ? 'space-x-3 px-4' : 'justify-center px-2'} py-3 rounded-lg transition-colors ${currentView === 'foundation-evaluation'
-                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-emerald-600 dark:text-gray-300 dark:hover:bg-gray-700'
+                  onClick={() => { setCurrentView('foundation-evaluation'); setViewParams({}); }}
+                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 group ${currentView === 'foundation-evaluation'
+                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20'
+                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                     }`}
-                  title={!isSidebarOpen ? 'Penilaian Yayasan' : ''}
                 >
-                  <Award className="w-5 h-5 flex-shrink-0" />
-                  {isSidebarOpen && <span className="text-sm font-medium">Penilaian Yayasan</span>}
+                  <Award className={`w-5 h-5 flex-shrink-0 ${currentView === 'foundation-evaluation' ? 'text-white' : 'group-hover:text-emerald-400'}`} />
+                  <span className="text-sm font-semibold">Penilaian Yayasan</span>
                 </button>
 
                 <button
-                  onClick={() => navigate('/tahfidz-foundation-reports')}
-                  className={`w-full flex items-center ${isSidebarOpen ? 'space-x-3 px-4' : 'justify-center px-2'} py-3 rounded-lg transition-colors text-gray-600 hover:bg-gray-100 hover:text-emerald-600 dark:text-gray-300 dark:hover:bg-gray-700`}
-                  title={!isSidebarOpen ? 'Laporan Supervisi Guru Tahfidz' : ''}
+                  onClick={() => { setCurrentView('tahfidz-foundation-reports'); setViewParams({}); }}
+                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 group ${currentView === 'tahfidz-foundation-reports'
+                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20'
+                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                    }`}
                 >
-                  <FileText className="w-5 h-5 flex-shrink-0" />
-                  {isSidebarOpen && <span className="text-sm font-medium">Laporan Supervisi Guru Tahfidz</span>}
+                  <FileText className={`w-5 h-5 flex-shrink-0 ${currentView === 'tahfidz-foundation-reports' ? 'text-white' : 'group-hover:text-emerald-400'}`} />
+                  <span className="text-sm font-semibold">Laporan Tahfidz Yayasan</span>
                 </button>
               </>
             )}
 
             {/* Statistik */}
             <button
-              onClick={() => setCurrentView('analytics')}
-              className={`w-full flex items-center ${isSidebarOpen ? 'space-x-3 px-4' : 'justify-center px-2'} py-3 rounded-lg transition-colors ${currentView === 'analytics'
-                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300'
-                : 'text-gray-600 hover:bg-gray-100 hover:text-emerald-600 dark:text-gray-300 dark:hover:bg-gray-700'
+              onClick={() => { setCurrentView('analytics'); setViewParams({}); }}
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 group ${currentView === 'analytics'
+                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20'
+                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                 }`}
-              title={!isSidebarOpen ? 'Statistik' : ''}
             >
-              <TrendingUp className="w-5 h-5 flex-shrink-0" />
-              {isSidebarOpen && <span className="text-sm font-medium">Statistik</span>}
+              <TrendingUp className={`w-5 h-5 flex-shrink-0 ${currentView === 'analytics' ? 'text-white' : 'group-hover:text-emerald-400'}`} />
+              <span className="text-sm font-semibold">Statistik</span>
             </button>
 
             {/* Daftar Akun */}
             {userRole === 'admin' && (
               <button
-                onClick={() => setCurrentView('users')}
-                className={`w-full flex items-center ${isSidebarOpen ? 'space-x-3 px-4' : 'justify-center px-2'} py-3 rounded-lg transition-colors ${currentView === 'users'
-                  ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-purple-600 dark:text-gray-300 dark:hover:bg-gray-700'
+                onClick={() => { setCurrentView('users'); setViewParams({}); }}
+                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 group ${currentView === 'users'
+                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20'
+                  : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                   }`}
-                title={!isSidebarOpen ? 'Daftar Akun' : ''}
               >
-                <Users className="w-5 h-5 flex-shrink-0" />
-                {isSidebarOpen && <span className="text-sm font-medium">Daftar Akun</span>}
+                <Users className={`w-5 h-5 flex-shrink-0 ${currentView === 'users' ? 'text-white' : 'group-hover:text-emerald-400'}`} />
+                <span className="text-sm font-semibold">Daftar Akun</span>
               </button>
             )}
+          </nav>
+
+          <div className="p-4 border-t border-slate-700/50 bg-slate-900/50">
+            <p className="text-[10px] text-slate-500 text-center font-medium">© 2025 Lapor Giat <br /> Versi Statis Premium</p>
           </div>
-        </nav>
+        </div>
       </aside>
 
       {/* Main Content */}
-      <main className="transition-all duration-300 pt-20 sm:pt-24 pb-8 lg:ml-64">
+      <main className="transition-all duration-300 pt-24 sm:pt-32 pb-12 lg:ml-64 bg-[#f8fafc] dark:bg-slate-900 min-h-screen relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {isLoading && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-emerald-600"></div>
+            <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-[100]">
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl flex flex-col items-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-600 mb-4"></div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Memproses data...</p>
+              </div>
             </div>
           )}
 
           {currentView === 'dashboard' && (
             <DashboardPage
               reports={reports}
-              getAveragePerformance={getAverageEvaluationScore} // Menggunakan fungsi baru
+              getAveragePerformance={getAverageEvaluationScore}
             />
           )}
-          {currentView === 'create' && (userRole === 'principal' || userRole === 'admin') && ( // Allow 'principal' AND 'admin' to create
+
+          {currentView === 'create' && (userRole === 'principal' || userRole === 'admin') && (
             <CreateReportPage
               currentReport={currentReport}
               setCurrentReport={setCurrentReport}
@@ -856,12 +943,11 @@ const IslamicPrincipalReportApp: React.FC<IslamicPrincipalReportAppProps> = ({ s
               submitReport={submitReport}
               resetForm={resetForm}
               isLoading={isLoading}
-              // showSuccessMessage={showSuccessMessage} // Replaced by toast
-              // setShowSuccessMessage={setShowSuccessMessage} // Replaced by toast
-              getAveragePerformance={getAverageEvaluationScore} // Menggunakan fungsi baru
-              allDetailedEvaluationItems={allDetailedEvaluationItems} // Meneruskan semua item penilaian
+              getAveragePerformance={getAverageEvaluationScore}
+              allDetailedEvaluationItems={allDetailedEvaluationItems}
             />
           )}
+
           {currentView === 'reports' && (
             <ReportsPage
               reports={reports}
@@ -870,50 +956,61 @@ const IslamicPrincipalReportApp: React.FC<IslamicPrincipalReportAppProps> = ({ s
               exportToGoogleSheets={exportToGoogleSheets}
               setCurrentReport={setCurrentReport}
               setCurrentView={setCurrentView}
-              getAveragePerformance={getAverageEvaluationScore} // Menggunakan fungsi baru
-              deleteReport={deleteReport} // Pass deleteReport function
-              userRole={userRole} // Pass userRole prop
-              refreshReports={forceRefreshReports} // Pass refresh function
-              onViewReport={handleViewReport} // Pass the new view report handler
+              getAveragePerformance={getAverageEvaluationScore}
+              deleteReport={deleteReport}
+              userRole={userRole}
+              refreshReports={forceRefreshReports}
+              onViewReport={handleViewReport}
             />
           )}
+
+          {currentView === 'view-report' && viewParams.reportId && (
+            <ViewReportPage
+              reportId={viewParams.reportId}
+              isInternal={true}
+            />
+          )}
+
           {currentView === 'analytics' && (
             <AnalyticsPage
               reports={reports}
-              allDetailedEvaluationItems={allDetailedEvaluationItems} // Meneruskan semua item penilaian
-              getAverageEvaluationScore={getAverageEvaluationScore} // Menggunakan fungsi baru
+              allDetailedEvaluationItems={allDetailedEvaluationItems}
+              getAverageEvaluationScore={getAverageEvaluationScore}
             />
           )}
-          {currentView === 'foundation-evaluation' && (userRole === 'foundation' || userRole === 'admin') && ( // Visible for 'foundation' AND 'admin'
+
+          {currentView === 'foundation-evaluation' && (userRole === 'foundation' || userRole === 'admin' || userRole === 'principal') && (
             <FoundationEvaluationPage
               reports={reports}
               session={session}
               isLoading={isLoading}
-              getAveragePerformance={getAverageEvaluationScore} // Menggunakan fungsi baru
+              getAveragePerformance={getAverageEvaluationScore}
               onReportUpdated={handleReportUpdated}
-              allDetailedEvaluationItems={allDetailedEvaluationItems} // Meneruskan semua item penilaian
+              allDetailedEvaluationItems={allDetailedEvaluationItems}
             />
           )}
+
           {currentView === 'users' && userRole === 'admin' && (
             <UsersPage />
           )}
+
           {currentView === 'rab-list' && (
-            <>
-              {console.log(`[IslamicPrincipalReportApp] Rendering RABListPage with userRole: ${userRole}`)}
-              <RABListPage
-                onEditRAB={handleEditRAB}
-                onCreateNewRAB={handleCreateNewRAB}
-                userRole={userRole}
-              />
-            </>
+            <RABListPage
+              onEditRAB={handleEditRAB}
+              onCreateNewRAB={handleCreateNewRAB}
+              userRole={userRole}
+            />
           )}
+
           {currentView === 'rab-form' && (
             <RABPage
               initialRABId={currentRABId}
               onRABSaved={handleRABSaved}
               userRole={userRole}
+              isInternal={true}
             />
           )}
+
           {currentView === 'realization-list' && (
             <RABRealizationListPage
               onEditRealization={handleEditRealization}
@@ -921,24 +1018,104 @@ const IslamicPrincipalReportApp: React.FC<IslamicPrincipalReportAppProps> = ({ s
               userRole={userRole}
             />
           )}
+
           {currentView === 'realization-form' && (
             <RABRealizationPage
               initialRealizationId={currentRealizationId}
               rabId={selectedRABForRealization}
               onRealizationSaved={handleRealizationSaved}
               userRole={userRole}
+              isInternal={true}
             />
           )}
-          {/* ViewReportPage is now handled by App.tsx router directly */}
+
+          {/* Tahfidz Supervision Views */}
+          {currentView === 'tahfidz-supervision' && (
+            <TahfidzSupervisionListPage
+              onView={handleViewTahfidzSupervision}
+              onEdit={handleEditTahfidzSupervision}
+              onCreate={handleCreateTahfidzSupervision}
+            />
+          )}
+
+          {currentView === 'tahfidz-supervision-form' && (
+            <TahfidzSupervisionFormPage
+              id={viewParams.id}
+              onSaved={() => setCurrentView('tahfidz-supervision')}
+            />
+          )}
+
+          {currentView === 'tahfidz-supervision-view' && viewParams.id && (
+            <TahfidzSupervisionViewPage
+              id={viewParams.id}
+            />
+          )}
+
+          {currentView === 'tahfidz-supervision-schedule' && (
+            <TahfidzSupervisionSchedulePage />
+          )}
+
+          {currentView === 'tahfidz-annual-schedule' && (
+            <TahfidzAnnualSchedulePage />
+          )}
+
+          {currentView === 'tahfidz-foundation-reports' && (
+            <FoundationTahfidzReportPage />
+          )}
+
+          {currentView === 'teachers' && (
+            <TeacherManagementPage
+              onUpload={() => setCurrentView('teachers-upload')}
+            />
+          )}
+
+          {currentView === 'teachers-upload' && (
+            <TeachersUploadPage
+              onSuccess={() => setCurrentView('teachers')}
+              onCancel={() => setCurrentView('teachers')}
+            />
+          )}
+
+          {currentView === 'memo-list' && (
+            <MemoListPage
+              userRole={userRole}
+              onCreateNewMemo={() => {
+                setCurrentMemoId(undefined);
+                setCurrentView('memo-form');
+              }}
+              onEditMemo={(id) => {
+                setCurrentMemoId(id);
+                setCurrentView('memo-form');
+              }}
+            />
+          )}
+
+          {currentView === 'memo-form' && (
+            <MemoFormPage
+              memoId={currentMemoId}
+              userRole={userRole}
+              onSaved={() => {
+                setCurrentView('memo-list');
+              }}
+              onCancel={() => {
+                setCurrentView('memo-list');
+              }}
+            />
+          )}
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="text-center text-gray-600 dark:text-gray-300">
-            <p className="mb-2">بارك الله فيكم - Semoga Allah memberkahi usaha kita</p>
-            <p className="text-sm">© 2025 Lapor Giat - Dikembangkan dengan penuh amanah</p>
+      <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-12 lg:ml-64">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0 text-center md:text-left">
+            <div className="text-gray-600 dark:text-gray-400">
+              <p className="font-bold text-emerald-600 mb-1">بارك الله فيكم</p>
+              <p className="text-sm">Semoga Allah memberkahi usaha dan amanah kita bersama.</p>
+            </div>
+            <div className="text-sm text-gray-500 dark:text-gray-500">
+              <p>© 2025 Lapor Giat - Sistem Pelaporan Pendidikan Islam</p>
+            </div>
           </div>
         </div>
       </footer>

@@ -7,7 +7,12 @@ interface Teacher {
   name: string;
 }
 
-const TeachersUploadPage: React.FC = () => {
+interface TeachersUploadPageProps {
+  onSuccess?: () => void;
+  onCancel?: () => void;
+}
+
+const TeachersUploadPage: React.FC<TeachersUploadPageProps> = ({ onSuccess, onCancel }) => {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -57,6 +62,9 @@ const TeachersUploadPage: React.FC = () => {
 
       setMessage({ type: 'success', text: `Berhasil upload ${teachers.length} guru ke database!` });
       setTeachers([]);
+      if (onSuccess) {
+        setTimeout(onSuccess, 1500);
+      }
     } catch (error: any) {
       console.error('Error uploading:', error);
       setMessage({ type: 'error', text: `Gagal upload: ${error.message}` });
@@ -80,15 +88,17 @@ const TeachersUploadPage: React.FC = () => {
 
   return (
     <div className="container mx-auto p-6">
-      <button
-        onClick={() => window.history.back()}
-        className="flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-4 font-medium"
-      >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </svg>
-        Kembali
-      </button>
+      {!onCancel && (
+        <button
+          onClick={() => window.history.back()}
+          className="flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-4 font-medium"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Kembali
+        </button>
+      )}
 
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center gap-3 mb-6">
@@ -139,9 +149,8 @@ const TeachersUploadPage: React.FC = () => {
 
         {/* Message */}
         {message && (
-          <div className={`mb-6 p-4 rounded-lg flex items-start gap-3 ${
-            message.type === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
-          }`}>
+          <div className={`mb-6 p-4 rounded-lg flex items-start gap-3 ${message.type === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+            }`}>
             {message.type === 'success' ? (
               <CheckCircle className="text-green-600 mt-0.5" size={20} />
             ) : (

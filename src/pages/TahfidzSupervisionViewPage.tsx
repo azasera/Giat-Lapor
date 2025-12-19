@@ -17,9 +17,14 @@ import {
 } from '../services/tahfidzSupervisionService';
 import { supabase } from '../services/supabaseService';
 
-const TahfidzSupervisionViewPage: React.FC = () => {
+interface TahfidzSupervisionViewPageProps {
+    id?: string;
+}
+
+const TahfidzSupervisionViewPage: React.FC<TahfidzSupervisionViewPageProps> = ({ id: propId }) => {
     const navigate = useNavigate();
-    const { id } = useParams();
+    const { id: paramId } = useParams();
+    const id = propId || paramId;
     const [loading, setLoading] = useState(true);
     const [supervision, setSupervision] = useState<TahfidzSupervision | null>(null);
     const [items, setItems] = useState<TahfidzSupervisionItem[]>([]);
@@ -108,14 +113,7 @@ const TahfidzSupervisionViewPage: React.FC = () => {
     return (
         <div className="container mx-auto p-6 max-w-5xl">
             {/* Header - Print Hidden */}
-            <div className="print:hidden mb-6 flex justify-between items-center">
-                <button
-                    onClick={() => navigate('/tahfidz-supervision')}
-                    className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
-                >
-                    <ArrowLeft size={20} />
-                    Kembali
-                </button>
+            <div className="print:hidden mb-6 flex justify-end items-center">
 
                 <div className="flex gap-2">
                     {supervision.status === 'submitted' && !supervision.sent_to_foundation && userRole !== 'foundation' && (

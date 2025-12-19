@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Search, Shield, UserCheck, Building2, Calendar } from 'lucide-react';
-import { fetchAllProfiles } from '../services/supabaseService';
-import { showError, showLoading, dismissToast } from '../utils/toast';
+import { fetchAllProfiles, updateUserRole } from '../services/supabaseService';
+import { showError, showLoading, dismissToast, showSuccess } from '../utils/toast';
+import { Edit2, Save, X as CloseIcon } from 'lucide-react';
 
 interface UserProfile {
   id: string;
@@ -18,6 +19,8 @@ const UsersPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | 'principal' | 'foundation' | 'admin'>('all');
   const [isLoading, setIsLoading] = useState(true);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     loadProfiles();
@@ -42,6 +45,28 @@ const UsersPage: React.FC = () => {
     }
   };
 
+  const handleRoleChange = async (userId: string, newRole: 'principal' | 'foundation' | 'admin') => {
+    const loadingToastId = showLoading('Memperbarui peran...');
+    setIsUpdating(true);
+    try {
+      await updateUserRole(userId, newRole);
+
+      // Update local state
+      setProfiles(prev => prev.map(p =>
+        p.id === userId ? { ...p, role: newRole, updated_at: new Date().toISOString() } : p
+      ));
+
+      setEditingUserId(null);
+      showSuccess('Peran berhasil diperbarui');
+    } catch (error) {
+      console.error('Error updating role:', error);
+      showError('Gagal memperbarui peran');
+    } finally {
+      dismissToast(loadingToastId);
+      setIsUpdating(false);
+    }
+  };
+
   const filterProfiles = () => {
     let filtered = profiles;
 
@@ -53,7 +78,7 @@ const UsersPage: React.FC = () => {
     // Filter by search term
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(p => 
+      filtered = filtered.filter(p =>
         (p.username?.toLowerCase().includes(term) || false) ||
         (p.full_name?.toLowerCase().includes(term) || false) ||
         p.role.toLowerCase().includes(term)
@@ -207,41 +232,37 @@ const UsersPage: React.FC = () => {
           <div className="flex gap-2">
             <button
               onClick={() => setRoleFilter('all')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                roleFilter === 'all'
+              className={`px-4 py-2 rounded-lg transition-colors ${roleFilter === 'all'
                   ? 'bg-emerald-600 text-white'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
+                }`}
             >
               Semua ({roleCounts.all})
             </button>
             <button
               onClick={() => setRoleFilter('principal')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                roleFilter === 'principal'
+              className={`px-4 py-2 rounded-lg transition-colors ${roleFilter === 'principal'
                   ? 'bg-emerald-600 text-white'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
+                }`}
             >
               Kepsek ({roleCounts.principal})
             </button>
             <button
               onClick={() => setRoleFilter('foundation')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                roleFilter === 'foundation'
+              className={`px-4 py-2 rounded-lg transition-colors ${roleFilter === 'foundation'
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
+                }`}
             >
               Yayasan ({roleCounts.foundation})
             </button>
             <button
               onClick={() => setRoleFilter('admin')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                roleFilter === 'admin'
+              className={`px-4 py-2 rounded-lg transition-colors ${roleFilter === 'admin'
                   ? 'bg-purple-600 text-white'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
+                }`}
             >
               Admin ({roleCounts.admin})
             </button>
@@ -266,6 +287,9 @@ const UsersPage: React.FC = () => {
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   ID
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Aksi
                 </th>
               </tr>
             </thead>
@@ -305,10 +329,23 @@ const UsersPage: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(profile.role)}`}>
-                        {getRoleIcon(profile.role)}
-                        {getRoleLabel(profile.role)}
-                      </span>
+                      {editingUserId === profile.id ? (
+                        <select
+                          value={profile.role}
+                          onChange={(e) => handleRoleChange(profile.id, e.target.value as any)}
+                          disabled={isUpdating}
+                          className="text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 focus:ring-emerald-500 focus:border-emerald-500"
+                        >
+                          <option value="principal">Kepala Sekolah</option>
+                          <option value="foundation">Yayasan</option>
+                          <option value="admin">Admin</option>
+                        </select>
+                      ) : (
+                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(profile.role)}`}>
+                          {getRoleIcon(profile.role)}
+                          {getRoleLabel(profile.role)}
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
@@ -317,9 +354,28 @@ const UsersPage: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-mono text-gray-500 dark:text-gray-400 truncate max-w-xs">
+                      <div className="text-sm font-mono text-gray-500 dark:text-gray-400 truncate max-w-[100px]">
                         {profile.id}
                       </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      {editingUserId === profile.id ? (
+                        <button
+                          onClick={() => setEditingUserId(null)}
+                          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                          title="Batal"
+                        >
+                          <CloseIcon className="w-5 h-5" />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setEditingUserId(profile.id)}
+                          className="text-emerald-600 hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-300"
+                          title="Edit Peran"
+                        >
+                          <Edit2 className="w-5 h-5" />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))

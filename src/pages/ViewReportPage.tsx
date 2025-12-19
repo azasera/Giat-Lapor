@@ -6,15 +6,21 @@ import { fetchSingleReport } from '../services/supabaseService';
 import ReportPdfContent from '../components/ReportPdfContent'; // Reusing the PDF content component for structured display
 import { showLoading, dismissToast, showError } from '../utils/toast';
 
-const ViewReportPage: React.FC = () => {
-  console.log('--- ViewReportPage component is rendering ---'); // Add this very basic log
-  const { reportId } = useParams<{ reportId: string }>();
+interface ViewReportPageProps {
+  reportId?: string;
+  isInternal?: boolean;
+}
+
+const ViewReportPage: React.FC<ViewReportPageProps> = ({ reportId: propReportId, isInternal = false }) => {
+  console.log('--- ViewReportPage component is rendering ---');
+  const { reportId: paramReportId } = useParams<{ reportId: string }>();
+  const reportId = propReportId || paramReportId;
   const navigate = useNavigate();
   const [report, setReport] = useState<ReportData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Log reportId immediately when component renders
-  console.log('[ViewReportPage] Component rendered. reportId from useParams:', reportId);
+  console.log('[ViewReportPage] Component rendered. reportId:', reportId);
 
   const getAverageEvaluationScore = useCallback((evaluation: { [itemId: string]: number }) => {
     const scores = Object.values(evaluation);
@@ -27,8 +33,10 @@ const ViewReportPage: React.FC = () => {
       console.log('[ViewReportPage] useEffect triggered. Attempting to load report with ID:', reportId);
 
       if (!reportId) {
-        showError('ID Laporan tidak ditemukan.');
-        navigate('/reports');
+        if (!isInternal) {
+          showError('ID Laporan tidak ditemukan.');
+          navigate('/reports');
+        }
         return;
       }
 
@@ -40,13 +48,15 @@ const ViewReportPage: React.FC = () => {
           setReport(fetchedReport);
           console.log('[ViewReportPage] Report loaded successfully:', fetchedReport.id);
         } else {
-          showError('Laporan tidak ditemukan atau Anda tidak memiliki akses.');
-          navigate('/reports');
+          if (!isInternal) {
+            showError('Laporan tidak ditemukan atau Anda tidak memiliki akses.');
+            navigate('/reports');
+          }
         }
       } catch (error) {
         console.error('[ViewReportPage] Gagal memuat laporan:', error);
         showError('Terjadi kesalahan saat memuat laporan.');
-        navigate('/reports');
+        if (!isInternal) navigate('/reports');
       } finally {
         dismissToast(loadingToastId);
         setIsLoading(false);
@@ -54,7 +64,7 @@ const ViewReportPage: React.FC = () => {
     };
 
     loadReport();
-  }, [reportId, navigate, getAverageEvaluationScore]);
+  }, [reportId, navigate, getAverageEvaluationScore, isInternal]);
 
   if (isLoading) {
     return (
@@ -69,33 +79,38 @@ const ViewReportPage: React.FC = () => {
     return (
       <div className="text-center py-12 text-gray-500 dark:text-gray-400">
         <h2 className="text-xl font-bold mb-4">Laporan tidak ditemukan.</h2>
-        <button
-          onClick={() => navigate('/reports')}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-        >
-          Kembali ke Daftar Laporan
-        </button>
+        {!isInternal && (
+          <button
+            onClick={() => navigate('/reports')}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
+            Kembali ke Daftar Laporan
+          </button>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg text-gray-900 dark:text-gray-100">
+    <div className="p-4 sm:p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg text-gray-900 dark:text-gray-100">
       <div className="flex justify-between items-center mb-6">
-        <button
-          onClick={() => navigate(-1)}
-          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg transition-colors flex items-center space-x-2"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span>Kembali</span>
-        </button>
-        <h1 className="text-2xl font-bold text-center text-emerald-700 dark:text-emerald-400 flex-grow">
+        {!isInternal && (
+          <button
+            onClick={() => navigate(-1)}
+            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg transition-colors flex items-center space-x-2"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span>Kembali</span>
+          </button>
+        )}
+        <h1 className={`${isInternal ? 'text-xl sm:text-2xl text-left' : 'text-2xl text-center'} font-bold text-emerald-700 dark:text-emerald-400 flex-grow`}>
           Detail Laporan Kegiatan
         </h1>
-        <div className="w-24"></div> {/* Placeholder for alignment */}
+        {isInternal && <div className="flex-grow-0"></div>}
+        {!isInternal && <div className="w-24"></div>}
       </div>
 
-      <div className="report-content-container bg-white dark:bg-gray-900 p-4 rounded-lg shadow-inner">
+      <div className="report-content-container bg-white dark:bg-gray-900 p-2 sm:p-4 rounded-lg shadow-inner">
         <ReportPdfContent
           report={report}
           allDetailedEvaluationItems={allDetailedEvaluationItems}

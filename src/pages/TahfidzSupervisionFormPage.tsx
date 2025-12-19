@@ -21,9 +21,15 @@ import {
 import { supabase } from '../services/supabaseService';
 import { generateSupervisionSummary, generateWithOpenAI } from '../services/aiService';
 
-const TahfidzSupervisionFormPage: React.FC = () => {
+interface TahfidzSupervisionFormPageProps {
+  id?: string;
+  onSaved?: () => void;
+}
+
+const TahfidzSupervisionFormPage: React.FC<TahfidzSupervisionFormPageProps> = ({ id: propId, onSaved }) => {
   const navigate = useNavigate();
-  const { id } = useParams();
+  const { id: paramId } = useParams();
+  const id = propId || paramId;
   const [loading, setLoading] = useState(false);
   const [teachers, setTeachers] = useState<any[]>([]);
   const [currentUserId, setCurrentUserId] = useState('');
@@ -385,13 +391,15 @@ const TahfidzSupervisionFormPage: React.FC = () => {
 
   return (
     <div className="container mx-auto p-3 sm:p-4 md:p-6 max-w-6xl">
-      <button
-        onClick={() => navigate('/tahfidz-supervision')}
-        className="flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-3 sm:mb-4 active:scale-95 transition-transform"
-      >
-        <ArrowLeft size={20} />
-        <span className="font-medium">Kembali</span>
-      </button>
+      {!onSaved && (
+        <button
+          onClick={() => navigate('/tahfidz-supervision')}
+          className="flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-3 sm:mb-4 active:scale-95 transition-transform"
+        >
+          <ArrowLeft size={20} />
+          <span className="font-medium">Kembali</span>
+        </button>
+      )}
 
       <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 mb-4 sm:mb-6">
         {id ? 'Edit' : 'Buat'} Supervisi Guru Tahfidz

@@ -15,13 +15,15 @@ interface RABRealizationPageProps {
   rabId?: string;
   onRealizationSaved?: () => void;
   userRole?: 'principal' | 'foundation' | 'admin';
+  isInternal?: boolean;
 }
 
 const RABRealizationPage: React.FC<RABRealizationPageProps> = ({
   initialRealizationId,
   rabId,
   onRealizationSaved,
-  userRole = 'principal'
+  userRole = 'principal',
+  isInternal = false
 }) => {
   const [realizationData, setRealizationData] = useState<RABRealization>({
     id: '',
@@ -499,36 +501,64 @@ const RABRealizationPage: React.FC<RABRealizationPageProps> = ({
 
   return (
     <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg text-gray-900 dark:text-gray-100">
-      <div className="flex justify-between items-center mb-6">
-        <button
-          onClick={() => navigate(-1)}
-          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg transition-colors flex items-center space-x-2"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span>Kembali</span>
-        </button>
-        <h1 className="text-2xl font-bold text-center text-emerald-700 dark:text-emerald-400 flex-grow">
-          REALISASI ANGGARAN BELANJA
-        </h1>
-        <div className="flex items-center space-x-2">
+      {!isInternal && (
+        <div className="flex justify-between items-center mb-6">
           <button
-            onClick={handleDownloadPDF}
-            className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center space-x-2"
-            title="Download PDF"
+            onClick={() => navigate(-1)}
+            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg transition-colors flex items-center space-x-2"
           >
-            <FileText className="w-4 h-4" />
-            <span className="hidden sm:inline">PDF</span>
+            <ArrowLeft className="w-5 h-5" />
+            <span>Kembali</span>
           </button>
-          <button
-            onClick={handleDownloadExcel}
-            className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center space-x-2"
-            title="Download Excel"
-          >
-            <FileSpreadsheet className="w-4 h-4" />
-            <span className="hidden sm:inline">Excel</span>
-          </button>
+          <h1 className="text-2xl font-bold text-center text-emerald-700 dark:text-emerald-400 flex-grow">
+            REALISASI ANGGARAN BELANJA
+          </h1>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handleDownloadPDF}
+              className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center space-x-2"
+              title="Download PDF"
+            >
+              <FileText className="w-4 h-4" />
+              <span className="hidden sm:inline">PDF</span>
+            </button>
+            <button
+              onClick={handleDownloadExcel}
+              className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center space-x-2"
+              title="Download Excel"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              <span className="hidden sm:inline">Excel</span>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
+
+      {isInternal && (
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
+            REALISASI ANGGARAN BELANJA
+          </h1>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handleDownloadPDF}
+              className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center space-x-2"
+              title="Download PDF"
+            >
+              <FileText className="w-4 h-4" />
+              <span className="hidden sm:inline">PDF</span>
+            </button>
+            <button
+              onClick={handleDownloadExcel}
+              className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center space-x-2"
+              title="Download Excel"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              <span className="hidden sm:inline">Excel</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Status Display */}
       {realizationData.id && (

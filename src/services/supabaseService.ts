@@ -3,6 +3,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config/supabaseConfig';
 import { ReportData, Activity, Achievement, DetailedEvaluationItem } from '../types/report'; // Update import
 import { RABData, ExpenseItem, SourceOfFund, UnitType, WeekNumber } from '../types/rab'; // Import RAB types
 import { RABRealization, RealizationItem } from '../types/realization'; // Import Realization types
+import { MemoData } from '../types/memo';
 
 // Create a single supabase client for interacting with your database
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -17,7 +18,7 @@ console.log('Supabase client initialized.');
  * @returns true if it's a temporary ID
  */
 const isTemporaryId = (id: string): boolean => {
-  return id.startsWith('ACT-') || id.startsWith('ACH-') || id.startsWith('REP-') || id.startsWith('RUT-') || id.startsWith('INC-');
+  return id.startsWith('ACT-') || id.startsWith('ACH-') || id.startsWith('REP-') || id.startsWith('RUT-') || id.startsWith('INC-') || id.startsWith('temp-');
 };
 
 // --- Supabase Service Functions ---
@@ -83,6 +84,26 @@ export const fetchAllProfiles = async () => {
     throw error;
   }
   return data || [];
+};
+
+/**
+ * Updates a user's role in the profiles table.
+ * @param userId The ID of the user to update.
+ * @param role The new role to assign.
+ */
+export const updateUserRole = async (userId: string, role: 'principal' | 'foundation' | 'admin') => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ role, updated_at: new Date().toISOString() })
+    .eq('id', userId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating user role:', error.message, error.details, error.hint);
+    throw error;
+  }
+  return data;
 };
 
 /**
@@ -1341,5 +1362,189 @@ export const submitRealizationToFoundation = async (realizationId: string, userI
     approvedAt: data.approved_at,
   };
 };
+// ===== MEMO FUNCTIONS =====
 
+/**
+ * Fetches all memos for a specific user or all memos for foundation/admin.
+ * @param userId The ID of the current user.
+ * @param userRole The role of the current user.
+ * @returns An array of MemoData.
+ */
+export const fetchMemos = async (userId: string, userRole: 'principal' | 'foundation' | 'admin' = 'principal'): Promise<MemoData[]> => {
+  console.log(`[supabaseService] fetchMemos called`);
 
+  let query = supabase
+    .from('memos')
+    .select(`
+      *,
+      memo_tables (*)
+    `)
+    .order('created_at', { ascending: false });
+
+  if (userRole === 'principal') {
+    query = query.eq('user_id', userId);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('Error fetching memos:', error.message);
+    return [];
+  }
+
+  return data.map((memo: any) => ({
+    id: memo.id,
+    user_id: memo.user_id,
+    memo_number: memo.memo_number,
+    subject: memo.subject,
+    from: memo.from,
+    to: memo.to,
+    date: memo.memo_date,
+    opening: memo.opening,
+    description: memo.description,
+    signatory_name: memo.signatory_name,
+    signatory_role: memo.signatory_role,
+    logo_left_url: memo.logo_left_url,
+    logo_right_url: memo.logo_right_url,
+    signature_url: memo.signature_url,
+    stamp_url: memo.stamp_url,
+    status: memo.status,
+    created_at: memo.created_at,
+    updated_at: memo.updated_at,
+    tables: (memo.memo_tables || []).sort((a: any, b: any) => a.order_index - b.order_index).map((table: any) => ({
+      id: table.id,
+      title: table.title,
+      headers: table.headers,
+      rows: table.rows,
+    })),
+  }));
+};
+
+/**
+ * Saves a new memo or updates an existing one.
+ * @param memoData The memo data to save.
+ * @param userId The ID of the user creating/updating.
+ * @returns The saved/updated memo data.
+ */
+export const saveMemoToSupabase = async (memoData: MemoData, userId: string): Promise<MemoData> => {
+  const { id, tables, ...rest } = memoData;
+
+  const memoPayload = {
+    ...rest,
+    user_id: userId,
+    memo_date: memoData.date,
+    updated_at: new Date().toISOString(),
+  };
+  // Remove technical fields from payload to avoid confusion
+  delete (memoPayload as any).date;
+  delete (memoPayload as any).created_at;
+
+  let savedMemo: any;
+  if (id && id.trim() !== '' && !isTemporaryId(id)) {
+    const { data, error } = await supabase
+      .from('memos')
+      .update(memoPayload)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    savedMemo = data;
+  } else {
+    const { data, error } = await supabase
+      .from('memos')
+      .insert([{ ...memoPayload }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    savedMemo = data;
+  }
+
+  // Handle tables
+  const currentTableIds = tables.filter(t => t.id && !isTemporaryId(t.id)).map(t => t.id);
+
+  if (currentTableIds.length > 0) {
+    await supabase.from('memo_tables').delete().eq('memo_id', savedMemo.id).filter('id', 'not.in', `(${currentTableIds.join(',')})`);
+  } else {
+    await supabase.from('memo_tables').delete().eq('memo_id', savedMemo.id);
+  }
+
+  const tablePayloads = tables.map((table, index) => {
+    const payload: any = {
+      memo_id: savedMemo.id,
+      title: table.title,
+      headers: table.headers,
+      rows: table.rows,
+      order_index: index
+    };
+    if (!isTemporaryId(table.id)) {
+      payload.id = table.id;
+    }
+    return payload;
+  });
+
+  if (tablePayloads.length > 0) {
+    const { error: tablesError } = await supabase.from('memo_tables').upsert(tablePayloads);
+    if (tablesError) throw tablesError;
+  }
+
+  // Re-fetch to return complete object
+  const { data: finalData } = await supabase.from('memos').select('*, memo_tables(*)').eq('id', savedMemo.id).single();
+
+  return {
+    id: finalData.id,
+    user_id: finalData.user_id,
+    memo_number: finalData.memo_number,
+    subject: finalData.subject,
+    from: finalData.from,
+    to: finalData.to,
+    date: finalData.memo_date,
+    opening: finalData.opening,
+    description: finalData.description,
+    signatory_name: finalData.signatory_name,
+    signatory_role: finalData.signatory_role,
+    logo_left_url: finalData.logo_left_url,
+    logo_right_url: finalData.logo_right_url,
+    signature_url: finalData.signature_url,
+    stamp_url: finalData.stamp_url,
+    status: finalData.status,
+    tables: (finalData.memo_tables || []).sort((a: any, b: any) => a.order_index - b.order_index).map((table: any) => ({
+      id: table.id,
+      title: table.title,
+      headers: table.headers,
+      rows: table.rows,
+    })),
+  };
+};
+
+/**
+ * Uploads an image for a memo.
+ * @param file The file to upload.
+ * @param path The path in the storage (e.g. 'logos/left-123.png')
+ * @returns The public URL of the uploaded image.
+ */
+export const uploadMemoImage = async (file: File, path: string): Promise<string> => {
+  const { data, error } = await supabase.storage
+    .from('memos')
+    .upload(path, file, {
+      cacheControl: '3600',
+      upsert: true
+    });
+
+  if (error) throw error;
+
+  const { data: { publicUrl } } = supabase.storage
+    .from('memos')
+    .getPublicUrl(data.path);
+
+  return publicUrl;
+};
+
+/**
+ * Deletes a memo.
+ */
+export const deleteMemoFromSupabase = async (memoId: string): Promise<void> => {
+  const { error } = await supabase.from('memos').delete().eq('id', memoId);
+  if (error) throw error;
+};

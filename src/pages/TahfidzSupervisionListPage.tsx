@@ -6,7 +6,13 @@ import { fetchSupervisions, deleteSupervision, generateCertificate } from '../se
 import { supabase } from '../services/supabaseService';
 import { getCategoryColor, getStatusColor } from '../types/tahfidzSupervision';
 
-const TahfidzSupervisionListPage: React.FC = () => {
+interface TahfidzSupervisionListPageProps {
+  onView?: (id: string) => void;
+  onEdit?: (id: string) => void;
+  onCreate?: () => void;
+}
+
+const TahfidzSupervisionListPage: React.FC<TahfidzSupervisionListPageProps> = ({ onView, onEdit, onCreate }) => {
   const navigate = useNavigate();
   const [supervisions, setSupervisions] = useState<TahfidzSupervision[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,15 +93,17 @@ const TahfidzSupervisionListPage: React.FC = () => {
   return (
     <div className="container mx-auto p-3 sm:p-4 md:p-6">
       {/* Back to Dashboard Button - Mobile Optimized */}
-      <button
-        onClick={() => navigate('/')}
-        className="flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-3 sm:mb-4 font-medium active:scale-95 transition-transform"
-      >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </svg>
-        <span className="text-sm sm:text-base">Kembali ke Dashboard</span>
-      </button>
+      {!onView && (
+        <button
+          onClick={() => navigate('/')}
+          className="flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-3 sm:mb-4 font-medium active:scale-95 transition-transform"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          <span className="text-sm sm:text-base">Kembali ke Dashboard</span>
+        </button>
+      )}
 
       {/* Header - Mobile Optimized */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 sm:mb-6">
@@ -111,7 +119,7 @@ const TahfidzSupervisionListPage: React.FC = () => {
                 <span className="hidden sm:inline">Jadwal</span>
               </button>
               <button
-                onClick={() => navigate('/tahfidz-supervision/new')}
+                onClick={() => onCreate ? onCreate() : navigate('/tahfidz-supervision/new')}
                 className="flex items-center justify-center gap-2 bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-blue-700 active:scale-95 transition-all text-sm flex-1 sm:flex-none"
               >
                 <Plus size={18} />
@@ -272,7 +280,7 @@ const TahfidzSupervisionListPage: React.FC = () => {
               {/* Actions */}
               <div className="flex sm:flex-col gap-2 w-full sm:w-auto">
                 <button
-                  onClick={() => navigate(`/tahfidz-supervision/view/${supervision.id}`)}
+                  onClick={() => onView ? onView(supervision.id) : navigate(`/tahfidz-supervision/view/${supervision.id}`)}
                   className="flex-1 sm:flex-none p-2 text-blue-600 hover:bg-blue-50 active:bg-blue-100 rounded transition-colors"
                   title="Lihat Detail"
                 >
@@ -280,7 +288,7 @@ const TahfidzSupervisionListPage: React.FC = () => {
                 </button>
                 {userRole !== 'foundation' && (
                   <button
-                    onClick={() => navigate(`/tahfidz-supervision/edit/${supervision.id}`)}
+                    onClick={() => onEdit ? onEdit(supervision.id) : navigate(`/tahfidz-supervision/edit/${supervision.id}`)}
                     className="flex-1 sm:flex-none p-2 text-green-600 hover:bg-green-50 active:bg-green-100 rounded transition-colors"
                     title="Edit"
                   >

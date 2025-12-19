@@ -1,0 +1,28 @@
+export interface MemoTable {
+    id: string;
+    title: string;
+    headers: string[];
+    rows: string[][];
+}
+
+export interface MemoData {
+    id: string;
+    user_id: string;
+    memo_number: string;
+    subject: string;
+    from: string;
+    to: string;
+    date: string;
+    tables: MemoTable[];
+    opening?: string;
+    description: string;
+    signatory_name: string;
+    signatory_role: string;
+    logo_left_url?: string;
+    logo_right_url?: string;
+    signature_url?: string;
+    stamp_url?: string;
+    created_at?: string;
+    updated_at?: string;
+    status: 'draft' | 'final';
+}
