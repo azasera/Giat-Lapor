@@ -47,10 +47,8 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
     useEffect(() => {
         if (memoId) {
             loadMemo();
-        } else {
-            // Default table if new memo
-            handleAddTable();
         }
+        // Don't add default table - let user add tables if needed
     }, [memoId]);
 
     const loadMemo = async () => {
@@ -645,6 +643,13 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
 
                         {openSections.tables && (
                             <div className="p-8 pt-0 border-t border-gray-50 dark:border-slate-700">
+                                {formData.tables.length === 0 ? (
+                                    <div className="text-center py-12">
+                                        <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                                        <p className="text-gray-400 mb-4">Tidak ada tabel. Klik tombol "Tambah Tabel" untuk menambahkan tabel data.</p>
+                                        <p className="text-xs text-gray-400 italic">Untuk surat tanpa tabel (seperti Surat Keterangan Pindah), Anda bisa langsung mengisi bagian Isi Surat di bawah.</p>
+                                    </div>
+                                ) : (
                                 <div className="space-y-8 mt-6">
                                     {formData.tables.map((table, tIdx) => (
                                         <div key={table.id} className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-200 dark:border-slate-700 overflow-hidden">
@@ -748,6 +753,7 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                                         </div>
                                     ))}
                                 </div>
+                                )}
                             </div>
                         )}
                     </div>
