@@ -1500,6 +1500,7 @@ export const saveMemoToSupabase = async (memoData: MemoData, userId: string): Pr
     subject: finalData.subject,
     from: finalData.from,
     to: finalData.to,
+    show_from_to: finalData.show_from_to !== false,
     date: finalData.memo_date,
     opening: finalData.opening,
     description: finalData.description,

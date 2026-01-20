@@ -13,6 +13,7 @@ export interface MemoData {
     subject: string;
     from: string;
     to: string;
+    show_from_to?: boolean; // Toggle to show/hide "Dari" and "Kepada" section
     date: string;
     tables: MemoTable[];
     opening?: string;

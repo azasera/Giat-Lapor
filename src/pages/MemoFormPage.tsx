@@ -22,6 +22,7 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
         subject: '',
         from: '',
         to: '',
+        show_from_to: true,
         date: new Date().toISOString().split('T')[0],
         tables: [],
         opening: '',
@@ -33,6 +34,7 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
 
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [showFromTo, setShowFromTo] = useState(true); // Toggle untuk menampilkan section Dari-Kepada
     const [openSections, setOpenSections] = useState<Record<string, boolean>>({
         logos: true,
         mainInfo: true,
@@ -70,6 +72,7 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                 subject: data.subject,
                 from: data.from,
                 to: data.to,
+                show_from_to: data.show_from_to !== false, // Default true if not set
                 date: data.memo_date,
                 opening: data.opening,
                 description: data.description,
@@ -87,6 +90,7 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                     rows: table.rows || [['1', '', '', '']]
                 }))
             });
+            setShowFromTo(data.show_from_to !== false);
         } catch (error) {
             console.error('Error loading memo:', error);
             showError('Gagal memuat data memo.');
@@ -343,12 +347,18 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
         doc.text(`Perihal     : ${formData.subject}`, 20, currentY + 6);
 
         currentY += 15;
-        doc.setDrawColor(0);
-        doc.rect(20, currentY, pageWidth - 40, 15);
-        doc.text(`Dari        : ${formData.from}`, 25, currentY + 6);
-        doc.text(`Kepada    : ${formData.to}`, 25, currentY + 11);
-
-        currentY += 25;
+        
+        // Only show Dari-Kepada section if enabled
+        if (formData.show_from_to !== false) {
+            doc.setDrawColor(0);
+            doc.rect(20, currentY, pageWidth - 40, 15);
+            doc.text(`Dari        : ${formData.from}`, 25, currentY + 6);
+            doc.text(`Kepada    : ${formData.to}`, 25, currentY + 11);
+            currentY += 25;
+        } else {
+            currentY += 10;
+        }
+        
         const bodyOpening = formData.opening || `Semoga Allah selalu memberikan perlindungan kepada kita semua untuk selalu istiqomah di atas jalan-Nya. Bersama dengan memo ini menyampaikan jam tambahan Guru, Jam mengajar guru sebagai berikut :`;
         const splitText = doc.splitTextToSize(bodyOpening, pageWidth - 40);
         doc.text(splitText, 20, currentY);
@@ -572,26 +582,49 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                                         />
                                     </div>
 
-                                    <div className="space-y-1">
-                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Dari</label>
-                                        <input
-                                            type="text"
-                                            value={formData.from}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, from: e.target.value }))}
-                                            placeholder="Kepala MTA"
-                                            className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all"
-                                        />
+                                    <div className="md:col-span-2 space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="checkbox"
+                                                id="showFromTo"
+                                                checked={showFromTo}
+                                                onChange={(e) => {
+                                                    setShowFromTo(e.target.checked);
+                                                    setFormData(prev => ({ ...prev, show_from_to: e.target.checked }));
+                                                }}
+                                                className="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded focus:ring-emerald-500"
+                                            />
+                                            <label htmlFor="showFromTo" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                Tampilkan section "Dari" dan "Kepada"
+                                            </label>
+                                        </div>
+                                        <p className="text-xs text-gray-400 pl-6">Nonaktifkan untuk surat yang tidak memerlukan section Dari-Kepada (seperti Surat Keterangan)</p>
                                     </div>
-                                    <div className="space-y-1">
-                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Kepada</label>
-                                        <input
-                                            type="text"
-                                            value={formData.to}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, to: e.target.value }))}
-                                            placeholder="Bendahara Yayasan"
-                                            className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all"
-                                        />
-                                    </div>
+
+                                    {showFromTo && (
+                                        <>
+                                            <div className="space-y-1">
+                                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Dari</label>
+                                                <input
+                                                    type="text"
+                                                    value={formData.from}
+                                                    onChange={(e) => setFormData(prev => ({ ...prev, from: e.target.value }))}
+                                                    placeholder="Kepala MTA"
+                                                    className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all"
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Kepada</label>
+                                                <input
+                                                    type="text"
+                                                    value={formData.to}
+                                                    onChange={(e) => setFormData(prev => ({ ...prev, to: e.target.value }))}
+                                                    placeholder="Bendahara Yayasan"
+                                                    className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all"
+                                                />
+                                            </div>
+                                        </>
+                                    )}
 
                                     <div className="md:col-span-2 space-y-1">
                                         <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Tanggal Memo</label>
@@ -913,10 +946,12 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                             </div>
                         </div>
 
-                        <div className="border border-gray-900 p-2 mt-2 text-[11px] space-y-0.5">
-                            <div className="flex"><span className="w-14 font-bold">Dari</span><span>: {formData.from || '...'}</span></div>
-                            <div className="flex"><span className="w-14 font-bold">Kepada</span><span>: {formData.to || '...'}</span></div>
-                        </div>
+                        {showFromTo && (
+                            <div className="border border-gray-900 p-2 mt-2 text-[11px] space-y-0.5">
+                                <div className="flex"><span className="w-14 font-bold">Dari</span><span>: {formData.from || '...'}</span></div>
+                                <div className="flex"><span className="w-14 font-bold">Kepada</span><span>: {formData.to || '...'}</span></div>
+                            </div>
+                        )}
 
                         <p className="text-[10px] leading-relaxed pt-4 whitespace-pre-line">
                             {formData.opening || `Semoga Allah selalu memberikan perlindungan kepada kita semua untuk selalu istiqomah di atas jalan-Nya.\nBersamaan dengan memo ini menyampaikan jam tambahan Guru, Jam mengajar guru sebagai berikut :`}
