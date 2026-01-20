@@ -342,9 +342,12 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
         let currentY = 65;
 
         const dateFormattedDoc = new Date(formData.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-        doc.text(`Nomor    : ${formData.memo_number}`, 20, currentY);
-        doc.text(`Pangkalpinang, ${dateFormattedDoc}`, pageWidth - 20, currentY, { align: 'right' });
-        doc.text(`Perihal     : ${formData.subject}`, 20, currentY + 6);
+        
+        // Format with consistent spacing using fixed positions
+        doc.text('Nomor', 20, currentY);
+        doc.text(': ' + formData.memo_number, 45, currentY);
+        doc.text('Perihal', 20, currentY + 6);
+        doc.text(': ' + formData.subject, 45, currentY + 6);
 
         currentY += 15;
         
@@ -352,8 +355,10 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
         if (formData.show_from_to !== false) {
             doc.setDrawColor(0);
             doc.rect(20, currentY, pageWidth - 40, 15);
-            doc.text(`Dari        : ${formData.from}`, 25, currentY + 6);
-            doc.text(`Kepada    : ${formData.to}`, 25, currentY + 11);
+            doc.text('Dari', 25, currentY + 6);
+            doc.text(': ' + formData.from, 50, currentY + 6);
+            doc.text('Kepada', 25, currentY + 11);
+            doc.text(': ' + formData.to, 50, currentY + 11);
             currentY += 25;
         } else {
             currentY += 10;
@@ -936,20 +941,33 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                             <h1 className="text-lg font-bold underline mt-1 tracking-widest uppercase">{formData.document_title || 'MEMO INTERNAL'}</h1>
                         </div>
 
-                        <div className="flex justify-between items-start text-[11px] pt-4">
+                        <div className="text-[11px] pt-4">
                             <div className="space-y-0.5">
-                                <div className="flex"><span className="w-14 font-bold">Nomor</span><span>: {formData.memo_number || '...'}</span></div>
-                                <div className="flex"><span className="w-14 font-bold">Perihal</span><span>: <span className="underline font-bold italic">{formData.subject || '...'}</span></span></div>
-                            </div>
-                            <div>
-                                Pangkalpinang, {new Date(formData.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                <div className="flex">
+                                    <span className="w-16 inline-block">Nomor</span>
+                                    <span className="w-4 inline-block">:</span>
+                                    <span>{formData.memo_number || '...'}</span>
+                                </div>
+                                <div className="flex">
+                                    <span className="w-16 inline-block">Perihal</span>
+                                    <span className="w-4 inline-block">:</span>
+                                    <span className="underline font-bold italic">{formData.subject || '...'}</span>
+                                </div>
                             </div>
                         </div>
 
                         {showFromTo && (
                             <div className="border border-gray-900 p-2 mt-2 text-[11px] space-y-0.5">
-                                <div className="flex"><span className="w-14 font-bold">Dari</span><span>: {formData.from || '...'}</span></div>
-                                <div className="flex"><span className="w-14 font-bold">Kepada</span><span>: {formData.to || '...'}</span></div>
+                                <div className="flex">
+                                    <span className="w-16 inline-block">Dari</span>
+                                    <span className="w-4 inline-block">:</span>
+                                    <span>{formData.from || '...'}</span>
+                                </div>
+                                <div className="flex">
+                                    <span className="w-16 inline-block">Kepada</span>
+                                    <span className="w-4 inline-block">:</span>
+                                    <span>{formData.to || '...'}</span>
+                                </div>
                             </div>
                         )}
 
