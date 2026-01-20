@@ -390,12 +390,30 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
             currentY = (doc as any).lastAutoTable.finalY + 10;
         }
 
-        // Closing
+        // Closing / Description
         const closingText = formData.description || `Semoga Allah Subhanahu wa ta’ala memberikan nikmat hidayah untuk senantiasa memperbaiki keikhlasan dalam setiap amalan kita.`;
         const splitClosing = doc.splitTextToSize(closingText, pageWidth - 40);
-        doc.text(splitClosing, 20, currentY);
-
-        currentY += splitClosing.length * 5 + 15;
+        
+        // Check if text contains numbered list (for student data formatting)
+        const hasNumberedList = /^\d+\./.test(closingText.trim());
+        
+        if (hasNumberedList) {
+            // Use monospace font for aligned list
+            doc.setFont('courier', 'normal');
+            const lines = closingText.split('\n');
+            lines.forEach((line) => {
+                if (line.trim()) {
+                    doc.text(line, 20, currentY);
+                    currentY += 5;
+                }
+            });
+            doc.setFont('helvetica', 'normal'); // Reset to normal font
+            currentY += 10;
+        } else {
+            // Normal text wrapping
+            doc.text(splitClosing, 20, currentY);
+            currentY += splitClosing.length * 5 + 15;
+        }
 
         // Signature & Stamp
         doc.text(`Pangkalpinang, ${dateFormattedDoc}`, pageWidth - 70, currentY, { align: 'center' });
