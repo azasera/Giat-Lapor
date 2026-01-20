@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Edit, Trash2, FileText, RefreshCw, Eye, Search } from 'lucide-react';
+import { Plus, Edit, Trash2, FileText, RefreshCw, Eye, Search, Copy } from 'lucide-react';
 import { MemoData } from '../types/memo';
 import { supabase, fetchMemos, deleteMemoFromSupabase } from '../services/supabaseService';
 import { showSuccess, showError, showLoading, dismissToast } from '../utils/toast';
@@ -60,6 +60,77 @@ const MemoListPage: React.FC<MemoListPageProps> = ({ onEditMemo, onCreateNewMemo
             loadMemos();
         } catch (error) {
             showError('Gagal menghapus memo.');
+        } finally {
+            dismissToast(loadingToastId);
+        }
+    };
+
+    const handleDuplicateMemo = async (memoId: string) => {
+        if (!window.confirm('Duplikasi memo ini? Salinan baru akan dibuat dengan status Draft.')) return;
+
+        const loadingToastId = showLoading('Menduplikasi memo...');
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error('User not authenticated');
+
+            // Fetch the original memo with tables
+            const { data: originalMemo, error: fetchError } = await supabase
+                .from('memos')
+                .select('*, memo_tables(*)')
+                .eq('id', memoId)
+                .single();
+
+            if (fetchError) throw fetchError;
+
+            // Create new memo (without id)
+            const { data: newMemo, error: insertError } = await supabase
+                .from('memos')
+                .insert([{
+                    user_id: user.id,
+                    memo_number: originalMemo.memo_number + ' (Copy)',
+                    document_title: originalMemo.document_title,
+                    subject: originalMemo.subject,
+                    from: originalMemo.from,
+                    to: originalMemo.to,
+                    show_from_to: originalMemo.show_from_to,
+                    memo_date: new Date().toISOString().split('T')[0], // Today's date
+                    opening: originalMemo.opening,
+                    description: originalMemo.description,
+                    signatory_name: originalMemo.signatory_name,
+                    signatory_role: originalMemo.signatory_role,
+                    logo_left_url: originalMemo.logo_left_url,
+                    logo_right_url: originalMemo.logo_right_url,
+                    signature_url: originalMemo.signature_url,
+                    stamp_url: originalMemo.stamp_url,
+                    status: 'draft'
+                }])
+                .select()
+                .single();
+
+            if (insertError) throw insertError;
+
+            // Duplicate tables if any
+            if (originalMemo.memo_tables && originalMemo.memo_tables.length > 0) {
+                const tablesToInsert = originalMemo.memo_tables.map((table: any) => ({
+                    memo_id: newMemo.id,
+                    title: table.title,
+                    headers: table.headers,
+                    rows: table.rows,
+                    order_index: table.order_index
+                }));
+
+                const { error: tablesError } = await supabase
+                    .from('memo_tables')
+                    .insert(tablesToInsert);
+
+                if (tablesError) throw tablesError;
+            }
+
+            showSuccess('Memo berhasil diduplikasi!');
+            loadMemos();
+        } catch (error) {
+            console.error('Error duplicating memo:', error);
+            showError('Gagal menduplikasi memo.');
         } finally {
             dismissToast(loadingToastId);
         }
@@ -147,6 +218,13 @@ const MemoListPage: React.FC<MemoListPageProps> = ({ onEditMemo, onCreateNewMemo
                                                     title="Edit/Lihat"
                                                 >
                                                     <Edit className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDuplicateMemo(memo.id)}
+                                                    className="p-2 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors"
+                                                    title="Duplikasi Memo"
+                                                >
+                                                    <Copy className="w-4 h-4" />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDeleteMemo(memo.id)}
