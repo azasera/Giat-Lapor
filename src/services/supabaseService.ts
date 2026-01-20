@@ -1496,6 +1496,7 @@ export const saveMemoToSupabase = async (memoData: MemoData, userId: string): Pr
     id: finalData.id,
     user_id: finalData.user_id,
     memo_number: finalData.memo_number,
+    document_title: finalData.document_title || 'MEMO INTERNAL',
     subject: finalData.subject,
     from: finalData.from,
     to: finalData.to,

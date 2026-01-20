@@ -18,6 +18,7 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
         id: '',
         user_id: '',
         memo_number: '',
+        document_title: 'MEMO INTERNAL',
         subject: '',
         from: '',
         to: '',
@@ -67,6 +68,7 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                 id: data.id,
                 user_id: data.user_id,
                 memo_number: data.memo_number,
+                document_title: data.document_title || 'MEMO INTERNAL',
                 subject: data.subject,
                 from: data.from,
                 to: data.to,
@@ -329,7 +331,7 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
 
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
-        doc.text('MEMO INTERNAL', pageWidth / 2, 55, { align: 'center' });
+        doc.text(formData.document_title || 'MEMO INTERNAL', pageWidth / 2, 55, { align: 'center' });
         doc.line(pageWidth / 2 - 20, 56, pageWidth / 2 + 20, 56);
 
         // Meta Info
@@ -538,6 +540,18 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                         {openSections.mainInfo && (
                             <div className="p-8 pt-0 border-t border-gray-50 dark:border-slate-700">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                                    <div className="md:col-span-2 space-y-1">
+                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Judul Dokumen</label>
+                                        <input
+                                            type="text"
+                                            value={formData.document_title}
+                                            onChange={(e) => setFormData(prev => ({ ...prev, document_title: e.target.value }))}
+                                            placeholder="Contoh: MEMO INTERNAL, SURAT PERINGATAN, SURAT PERNYATAAN, dll"
+                                            className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all font-bold uppercase"
+                                        />
+                                        <p className="text-xs text-gray-400 pl-1 mt-1">Contoh: MEMO INTERNAL, SURAT PERINGATAN, SURAT PERNYATAAN, SURAT PINDAH SEKOLAH</p>
+                                    </div>
+
                                     <div className="md:col-span-2 space-y-1">
                                         <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Nomor Memo</label>
                                         <input
@@ -880,7 +894,7 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
 
                         <div className="text-center pt-2">
                             <p className="text-[10px] italic font-serif">Bismillahirrahmanirrahim</p>
-                            <h1 className="text-lg font-bold underline mt-1 tracking-widest uppercase">MEMO INTERNAL</h1>
+                            <h1 className="text-lg font-bold underline mt-1 tracking-widest uppercase">{formData.document_title || 'MEMO INTERNAL'}</h1>
                         </div>
 
                         <div className="flex justify-between items-start text-[11px] pt-4">

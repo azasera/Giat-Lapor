@@ -9,6 +9,7 @@ export interface MemoData {
     id: string;
     user_id: string;
     memo_number: string;
+    document_title?: string; // Custom title for document (e.g., "MEMO INTERNAL", "SURAT PERINGATAN", etc.)
     subject: string;
     from: string;
     to: string;
