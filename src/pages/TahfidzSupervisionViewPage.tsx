@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Edit2, Printer, Send, Award } from 'lucide-react';
+import { ArrowLeft, Edit2, Printer, Send, Award, Home } from 'lucide-react';
 import {
     SUPERVISION_CATEGORIES,
     TahfidzSupervision,
@@ -113,7 +113,14 @@ const TahfidzSupervisionViewPage: React.FC<TahfidzSupervisionViewPageProps> = ({
     return (
         <div className="container mx-auto p-6 max-w-5xl">
             {/* Header - Print Hidden */}
-            <div className="print:hidden mb-6 flex justify-end items-center">
+            <div className="print:hidden mb-6 flex justify-between items-center">
+                <button
+                    onClick={() => navigate('/')}
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                    <Home size={18} />
+                    Kembali ke Dashboard
+                </button>
 
                 <div className="flex gap-2">
                     {supervision.status === 'submitted' && !supervision.sent_to_foundation && userRole !== 'foundation' && (
