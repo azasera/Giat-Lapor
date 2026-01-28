@@ -500,3 +500,183 @@ export const fetchFoundationSupervisionReports = async () => {
   return data as TahfidzSupervision[];
 };
 
+// ============================================
+// DOCUMENTATION PHOTOS/VIDEOS
+// ============================================
+
+/**
+ * Upload a photo or video for supervision documentation
+ * @param file The file to upload (image or video)
+ * @param supervisionId The supervision ID
+ * @param userId The user ID (for folder organization)
+ * @returns The public URL of the uploaded file
+ */
+export const uploadSupervisionPhoto = async (
+  file: File,
+  supervisionId: string,
+  userId: string
+): Promise<string> => {
+  // Validate file type
+  const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+  const allowedVideoTypes = ['video/mp4', 'video/webm', 'video/quicktime'];
+  const allowedTypes = [...allowedImageTypes, ...allowedVideoTypes];
+
+  if (!allowedTypes.includes(file.type)) {
+    throw new Error('Tipe file tidak didukung. Gunakan JPG, PNG, WebP untuk foto atau MP4, WebM, MOV untuk video.');
+  }
+
+  // Validate file size (10MB for images, 50MB for videos)
+  const maxSize = allowedVideoTypes.includes(file.type) ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+  if (file.size > maxSize) {
+    const maxSizeMB = maxSize / (1024 * 1024);
+    throw new Error(`Ukuran file terlalu besar. Maksimal ${maxSizeMB}MB.`);
+  }
+
+  // Generate unique filename
+  const timestamp = Date.now();
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${timestamp}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+  const filePath = `${userId}/${supervisionId}/${fileName}`;
+
+  // Upload to Supabase Storage
+  const { data, error } = await supabase.storage
+    .from('supervision-photos')
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false
+    });
+
+  if (error) {
+    console.error('Upload error:', error);
+    throw new Error(`Gagal upload file: ${error.message}`);
+  }
+
+  // Get public URL
+  const { data: { publicUrl } } = supabase.storage
+    .from('supervision-photos')
+    .getPublicUrl(filePath);
+
+  return publicUrl;
+};
+
+/**
+ * Delete a photo or video from supervision documentation
+ * @param fileUrl The public URL of the file to delete
+ * @returns void
+ */
+export const deleteSupervisionPhoto = async (fileUrl: string): Promise<void> => {
+  try {
+    // Extract file path from URL
+    // URL format: https://{project}.supabase.co/storage/v1/object/public/supervision-photos/{path}
+    const urlParts = fileUrl.split('/supervision-photos/');
+    if (urlParts.length < 2) {
+      throw new Error('Invalid file URL');
+    }
+    const filePath = urlParts[1];
+
+    // Delete from storage
+    const { error } = await supabase.storage
+      .from('supervision-photos')
+      .remove([filePath]);
+
+    if (error) {
+      console.error('Delete error:', error);
+      throw new Error(`Gagal menghapus file: ${error.message}`);
+    }
+  } catch (error) {
+    console.error('Error deleting photo:', error);
+    throw error;
+  }
+};
+
+/**
+ * Add photo URL to supervision record
+ * @param supervisionId The supervision ID
+ * @param photoUrl The photo URL to add
+ * @returns Updated supervision
+ */
+export const addPhotoToSupervision = async (
+  supervisionId: string,
+  photoUrl: string
+): Promise<TahfidzSupervision> => {
+  // Fetch current supervision
+  const supervision = await fetchSupervisionById(supervisionId);
+
+  // Add new photo URL to array
+  const currentPhotos = supervision.documentation_photos || [];
+  const updatedPhotos = [...currentPhotos, photoUrl];
+
+  // Update supervision
+  const { data, error } = await supabase
+    .from('tahfidz_supervisions')
+    .update({ documentation_photos: updatedPhotos })
+    .eq('id', supervisionId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as TahfidzSupervision;
+};
+
+/**
+ * Remove photo URL from supervision record
+ * @param supervisionId The supervision ID
+ * @param photoUrl The photo URL to remove
+ * @returns Updated supervision
+ */
+export const removePhotoFromSupervision = async (
+  supervisionId: string,
+  photoUrl: string
+): Promise<TahfidzSupervision> => {
+  // Fetch current supervision
+  const supervision = await fetchSupervisionById(supervisionId);
+
+  // Remove photo URL from array
+  const currentPhotos = supervision.documentation_photos || [];
+  const updatedPhotos = currentPhotos.filter(url => url !== photoUrl);
+
+  // Update supervision
+  const { data, error } = await supabase
+    .from('tahfidz_supervisions')
+    .update({ documentation_photos: updatedPhotos })
+    .eq('id', supervisionId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as TahfidzSupervision;
+};
+
+/**
+ * Upload multiple photos/videos at once
+ * @param files Array of files to upload
+ * @param supervisionId The supervision ID
+ * @param userId The user ID
+ * @param onProgress Optional callback for upload progress
+ * @returns Array of public URLs
+ */
+export const uploadMultipleSupervisionPhotos = async (
+  files: File[],
+  supervisionId: string,
+  userId: string,
+  onProgress?: (current: number, total: number) => void
+): Promise<string[]> => {
+  const uploadedUrls: string[] = [];
+
+  for (let i = 0; i < files.length; i++) {
+    try {
+      const url = await uploadSupervisionPhoto(files[i], supervisionId, userId);
+      uploadedUrls.push(url);
+
+      if (onProgress) {
+        onProgress(i + 1, files.length);
+      }
+    } catch (error) {
+      console.error(`Failed to upload file ${files[i].name}:`, error);
+      // Continue with other files even if one fails
+    }
+  }
+
+  return uploadedUrls;
+};
+

@@ -13,9 +13,12 @@ import {
 import {
     fetchSupervisionById,
     fetchSupervisionItems,
-    sendSupervisionToFoundation
+    sendSupervisionToFoundation,
+    deleteSupervisionPhoto,
+    removePhotoFromSupervision
 } from '../services/tahfidzSupervisionService';
 import { supabase } from '../services/supabaseService';
+import SupervisionGallery from '../components/SupervisionGallery';
 
 interface TahfidzSupervisionViewPageProps {
     id?: string;
@@ -295,6 +298,26 @@ const TahfidzSupervisionViewPage: React.FC<TahfidzSupervisionViewPageProps> = ({
                     );
                 })}
             </div>
+
+            {/* Documentation Gallery */}
+            {supervision.documentation_photos && supervision.documentation_photos.length > 0 && (
+                <div className="bg-white rounded-lg shadow p-8 mb-6">
+                    <h2 className="text-2xl font-bold mb-6">📸 Dokumentasi Supervisi</h2>
+                    <SupervisionGallery
+                        photos={supervision.documentation_photos}
+                        onDelete={async (photoUrl) => {
+                            if (!id) return;
+                            // Delete from storage
+                            await deleteSupervisionPhoto(photoUrl);
+                            // Remove from database
+                            await removePhotoFromSupervision(id, photoUrl);
+                            // Reload data
+                            await loadData();
+                        }}
+                        readOnly={supervision.status !== 'draft' || userRole === 'foundation'}
+                    />
+                </div>
+            )}
 
             {/* Summary & Recommendations */}
             <div className="bg-white rounded-lg shadow p-8 mb-6">

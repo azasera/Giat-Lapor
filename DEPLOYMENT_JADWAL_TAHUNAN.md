@@ -92,7 +92,7 @@ npm run dev
 
 ### 3. Deploy ke Production
 
-#### Vercel (Rekomendasi)
+#### Vercel (Rekomendaski)
 ```bash
 # Push ke Git
 git add .

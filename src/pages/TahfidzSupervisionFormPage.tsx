@@ -20,6 +20,9 @@ import {
 } from '../services/tahfidzSupervisionService';
 import { supabase } from '../services/supabaseService';
 import { generateSupervisionSummary, generateWithOpenAI } from '../services/aiService';
+import MediaUploader from '../components/MediaUploader';
+import SupervisionGallery from '../components/SupervisionGallery';
+import { uploadMultipleSupervisionPhotos, addPhotoToSupervision, deleteSupervisionPhoto, removePhotoFromSupervision } from '../services/tahfidzSupervisionService';
 
 interface TahfidzSupervisionFormPageProps {
   id?: string;
@@ -53,6 +56,8 @@ const TahfidzSupervisionFormPage: React.FC<TahfidzSupervisionFormPageProps> = ({
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiStyle, setAiStyle] = useState<'detailed' | 'concise'>('detailed');
   const [generateSuccess, setGenerateSuccess] = useState(false);
+  const [documentationPhotos, setDocumentationPhotos] = useState<string[]>([]);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
 
   // Accordion state
   const [openCategories, setOpenCategories] = useState<{ [key: number]: boolean }>({
@@ -125,6 +130,9 @@ const TahfidzSupervisionFormPage: React.FC<TahfidzSupervisionFormPageProps> = ({
           weaknesses: supervision.weaknesses || '',
           action_plan: supervision.action_plan || ''
         });
+
+        // Load documentation photos
+        setDocumentationPhotos(supervision.documentation_photos || []);
 
         const scoresMap: { [key: string]: number } = {};
         const notesMap: { [key: string]: string } = {};
@@ -213,6 +221,7 @@ const TahfidzSupervisionFormPage: React.FC<TahfidzSupervisionFormPageProps> = ({
         max_score: scoreData.max_score,
         percentage: scoreData.percentage,
         category: scoreData.category as any,
+        documentation_photos: documentationPhotos,
         submitted_at: status === 'submitted' ? new Date().toISOString() : undefined
       };
 
@@ -866,6 +875,67 @@ const TahfidzSupervisionFormPage: React.FC<TahfidzSupervisionFormPageProps> = ({
             placeholder="Catatan tambahan..."
           />
         </div>
+      </div>
+
+      {/* Documentation Upload */}
+      <div className="bg-white rounded-lg shadow p-6 mt-6">
+        <h2 className="text-xl font-bold text-gray-800 mb-4">📸 Dokumentasi Supervisi</h2>
+        <p className="text-sm text-gray-600 mb-4">
+          Upload foto atau video sebagai bukti dokumentasi supervisi (opsional)
+        </p>
+
+        {/* Existing Photos Gallery */}
+        {documentationPhotos.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-sm font-medium text-gray-700 mb-3">Foto/Video yang Sudah Diupload ({documentationPhotos.length})</h3>
+            <SupervisionGallery
+              photos={documentationPhotos}
+              onDelete={async (photoUrl) => {
+                if (id) {
+                  // If editing existing supervision, delete from storage and database
+                  await deleteSupervisionPhoto(photoUrl);
+                  await removePhotoFromSupervision(id, photoUrl);
+                }
+                // Remove from local state
+                setDocumentationPhotos(documentationPhotos.filter(p => p !== photoUrl));
+              }}
+              readOnly={false}
+            />
+          </div>
+        )}
+
+        {/* Upload New Photos */}
+        <MediaUploader
+          onUpload={async (files) => {
+            setUploadingPhotos(true);
+            try {
+              // Upload files to storage
+              const uploadedUrls = await uploadMultipleSupervisionPhotos(
+                files,
+                id || 'temp', // Use temp ID for new supervisions
+                currentUserId
+              );
+
+              // Add to local state
+              setDocumentationPhotos([...documentationPhotos, ...uploadedUrls]);
+
+              // If editing existing supervision, also update database
+              if (id) {
+                for (const url of uploadedUrls) {
+                  await addPhotoToSupervision(id, url);
+                }
+              }
+
+              alert(`Berhasil upload ${uploadedUrls.length} file!`);
+            } catch (error) {
+              console.error('Upload error:', error);
+              alert('Gagal upload file. Silakan coba lagi.');
+            } finally {
+              setUploadingPhotos(false);
+            }
+          }}
+          disabled={uploadingPhotos}
+        />
       </div>
 
       {/* Action Buttons */}

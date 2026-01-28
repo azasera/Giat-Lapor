@@ -36,6 +36,7 @@ export interface TahfidzSupervision {
   strengths?: string;
   weaknesses?: string;
   action_plan?: string;
+  documentation_photos?: string[]; // Array of photo/video URLs from Supabase Storage
   created_at: string;
   updated_at: string;
   submitted_at?: string;
