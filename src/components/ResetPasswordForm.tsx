@@ -11,7 +11,31 @@ const ResetPasswordForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check if we have a recovery session
+    const checkRecoverySession = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('Error getting session:', error);
+        setError('Sesi recovery tidak valid. Silakan request reset password baru.');
+        return;
+      }
+
+      if (session) {
+        console.log('Recovery session found:', session);
+        setSessionReady(true);
+      } else {
+        console.log('No recovery session found');
+        setError('Sesi recovery tidak ditemukan. Silakan request reset password baru.');
+      }
+    };
+
+    checkRecoverySession();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,6 +121,30 @@ const ResetPasswordForm: React.FC = () => {
             <p className="text-gray-600 dark:text-gray-300">
               Mengarahkan ke halaman login...
             </p>
+          </div>
+        ) : !sessionReady ? (
+          <div className="text-center">
+            <div className="flex justify-center mb-4">
+              <AlertCircle className="w-16 h-16 text-yellow-500" />
+            </div>
+            <h3 className="text-xl font-semibold text-yellow-600 dark:text-yellow-400 mb-2">
+              Memuat Sesi Recovery...
+            </h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">
+              Mohon tunggu sebentar...
+            </p>
+            {error && (
+              <div className="bg-red-100 dark:bg-red-900/20 border border-red-400 text-red-700 dark:text-red-300 px-4 py-3 rounded relative mb-4" role="alert">
+                <AlertCircle className="inline-block w-4 h-4 mr-2" />
+                <span className="block sm:inline">{error}</span>
+              </div>
+            )}
+            <button
+              onClick={() => navigate('/')}
+              className="text-emerald-600 dark:text-emerald-400 hover:underline"
+            >
+              Kembali ke Login
+            </button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">

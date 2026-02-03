@@ -42,19 +42,20 @@ function App() {
       console.log('Recovery type:', type);
       console.log('Access token present:', !!accessToken);
 
-      if (type === 'recovery' && accessToken) {
+      // Check for recovery type even without access token (for manual testing)
+      if (type === 'recovery') {
         console.log('Password recovery detected from URL');
-
-        // Set password recovery mode first
         setIsPasswordRecovery(true);
 
-        // Get the session which Supabase auto-creates from the recovery token
-        const { data, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error('Error getting recovery session:', error);
-        } else {
-          console.log('Recovery session created, will sign out after password reset');
-          setSession(data.session);
+        if (accessToken) {
+          // Get the session which Supabase auto-creates from the recovery token
+          const { data, error } = await supabase.auth.getSession();
+          if (error) {
+            console.error('Error getting recovery session:', error);
+          } else {
+            console.log('Recovery session created, will sign out after password reset');
+            setSession(data.session);
+          }
         }
         setLoading(false);
       } else {
@@ -103,6 +104,10 @@ function App() {
     <Router>
       <RouteLogger /> {/* Add RouteLogger here */}
       <Routes>
+        <Route
+          path="/reset-password"
+          element={<ResetPasswordForm />}
+        />
         <Route
           path="/rab" // New route for RABPage
           element={

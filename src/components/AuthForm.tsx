@@ -118,7 +118,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
 
     try {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(forgotPasswordEmail.trim(), {
-        redirectTo: `${window.location.origin}/#type=recovery`,
+        redirectTo: `${window.location.origin}/reset-password`,
       });
 
       if (resetError) {

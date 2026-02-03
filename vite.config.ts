@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 3000,
-    host: 'localhost',
+    host: '0.0.0.0', // Allow access from any IP
     open: true,
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
