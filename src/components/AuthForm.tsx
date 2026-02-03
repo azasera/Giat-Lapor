@@ -126,7 +126,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
         throw resetError;
       }
 
-      setMessage('Link reset password telah dikirim ke email Anda.');
+      setMessage('Link reset password telah dikirim ke email Anda. Periksa inbox dan folder spam.');
       setShowForgotPassword(false);
       setForgotPasswordEmail('');
     } catch (err: any) {

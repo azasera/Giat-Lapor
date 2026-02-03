@@ -38,6 +38,10 @@ function App() {
       const type = hashParams.get('type');
       const accessToken = hashParams.get('access_token');
 
+      console.log('URL hash:', window.location.hash);
+      console.log('Recovery type:', type);
+      console.log('Access token present:', !!accessToken);
+
       if (type === 'recovery' && accessToken) {
         console.log('Password recovery detected from URL');
 
