@@ -186,17 +186,15 @@ const IslamicPrincipalReportApp: React.FC<IslamicPrincipalReportAppProps> = ({ s
     const loadingToastId = showLoading('Mengirim laporan...');
     setIsLoading(true);
     try {
-      // First save as draft to ensure we have a valid record
-      const draftReport = await saveReportToSupabase(currentReport, session.user.id);
-      
-      // Then submit the saved report
-      const submittedReport = {
-        ...draftReport, // Use the saved report data
+      // Create a clean report object without potentially invalid ID
+      const reportToSubmit = {
+        ...currentReport,
+        id: currentReport.id && currentReport.id.trim() !== '' ? currentReport.id : '', // Clean ID
         status: 'submitted' as 'submitted',
         submittedAt: new Date().toISOString(),
       };
       
-      const saved = await saveReportToSupabase(submittedReport, session.user.id);
+      const saved = await saveReportToSupabase(reportToSubmit, session.user.id);
       setReports(prev => {
         const existingIndex = prev.findIndex(r => r.id === saved.id);
         if (existingIndex > -1) {
