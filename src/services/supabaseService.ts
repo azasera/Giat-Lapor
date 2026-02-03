@@ -255,14 +255,18 @@ export const saveReportToSupabase = async (reportData: ReportData, userId: strin
       .from('reports')
       .update(reportPayload)
       .eq('id', id)
-      .select()
-      .single();
+      .select();
 
     if (error) {
       console.error('Error updating report:', error.message, error.details, error.hint);
       throw error;
     }
-    savedReport = data;
+    
+    if (!data || data.length === 0) {
+      throw new Error(`Report with ID ${id} not found or could not be updated`);
+    }
+    
+    savedReport = data[0];
   } else { // New report, insert
     const { data, error } = await supabase
       .from('reports')
