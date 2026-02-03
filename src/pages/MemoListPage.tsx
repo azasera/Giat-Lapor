@@ -24,8 +24,12 @@ const MemoListPage: React.FC<MemoListPageProps> = ({ onEditMemo, onCreateNewMemo
             setIsLoading(false);
             return;
         }
+
+        console.log(`[MemoListPage] Loading memos for user ${user.id} with role ${userRole}`);
+        
         try {
             const fetchedMemos = await fetchMemos(user.id, userRole);
+            console.log(`[MemoListPage] Fetched ${fetchedMemos.length} memos:`, fetchedMemos.map(m => ({ id: m.id, status: m.status, memo_number: m.memo_number })));
             setMemos(fetchedMemos);
             setFilteredMemos(fetchedMemos);
         } catch (error) {
@@ -168,9 +172,14 @@ const MemoListPage: React.FC<MemoListPageProps> = ({ onEditMemo, onCreateNewMemo
                         <div>
                             <h2 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
                                 <FileText className="w-6 h-6 text-emerald-600" />
-                                Daftar Memo Internal
+                                {userRole === 'foundation' ? 'Memo dari Sekolah' : 'Daftar Memo Internal'}
                             </h2>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Kelola dan cetak memo resmi sekolah</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                {userRole === 'foundation' 
+                                    ? 'Memo dan surat yang dikirim dari sekolah ke yayasan' 
+                                    : 'Kelola dan cetak memo resmi sekolah'
+                                }
+                            </p>
                         </div>
 
                         <div className="flex items-center gap-2">

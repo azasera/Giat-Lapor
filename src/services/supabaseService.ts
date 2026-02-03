@@ -1389,7 +1389,7 @@ export const submitRealizationToFoundation = async (realizationId: string, userI
  * @returns An array of MemoData.
  */
 export const fetchMemos = async (userId: string, userRole: 'principal' | 'foundation' | 'admin' = 'principal'): Promise<MemoData[]> => {
-  console.log(`[supabaseService] fetchMemos called`);
+  console.log(`[supabaseService] fetchMemos called for userId: ${userId}, userRole: ${userRole}`);
 
   let query = supabase
     .from('memos')
@@ -1403,6 +1403,7 @@ export const fetchMemos = async (userId: string, userRole: 'principal' | 'founda
     query = query.eq('user_id', userId);
   } else if (userRole === 'foundation') {
     // Foundation can see memos sent to them
+    console.log('[supabaseService] Filtering memos for foundation - status = sent_to_foundation');
     query = query.eq('status', 'sent_to_foundation');
   }
   // Admin sees all memos
@@ -1413,6 +1414,8 @@ export const fetchMemos = async (userId: string, userRole: 'principal' | 'founda
     console.error('Error fetching memos:', error.message);
     return [];
   }
+
+  console.log(`[supabaseService] Fetched ${data?.length || 0} memos for ${userRole}:`, data?.map(m => ({ id: m.id, status: m.status, memo_number: m.memo_number })));
 
   return data.map((memo: any) => ({
     id: memo.id,
