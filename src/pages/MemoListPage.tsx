@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Edit, Trash2, FileText, RefreshCw, Eye, Search, Copy } from 'lucide-react';
+import { Plus, Edit, Trash2, FileText, RefreshCw, Eye, Search, Copy, Send } from 'lucide-react';
 import { MemoData } from '../types/memo';
-import { supabase, fetchMemos, deleteMemoFromSupabase } from '../services/supabaseService';
+import { supabase, fetchMemos, deleteMemoFromSupabase, sendMemoToFoundation } from '../services/supabaseService';
 import { showSuccess, showError, showLoading, dismissToast } from '../utils/toast';
 
 interface MemoListPageProps {
@@ -60,6 +60,22 @@ const MemoListPage: React.FC<MemoListPageProps> = ({ onEditMemo, onCreateNewMemo
             loadMemos();
         } catch (error) {
             showError('Gagal menghapus memo.');
+        } finally {
+            dismissToast(loadingToastId);
+        }
+    };
+
+    const handleSendToFoundation = async (memoId: string, memoNumber: string) => {
+        if (!window.confirm(`Kirim memo "${memoNumber}" ke pihak yayasan? Setelah dikirim, memo tidak dapat diubah lagi.`)) return;
+
+        const loadingToastId = showLoading('Mengirim memo ke yayasan...');
+        try {
+            await sendMemoToFoundation(memoId);
+            showSuccess('Memo berhasil dikirim ke yayasan!');
+            loadMemos();
+        } catch (error) {
+            console.error('Error sending memo to foundation:', error);
+            showError('Gagal mengirim memo ke yayasan.');
         } finally {
             dismissToast(loadingToastId);
         }
@@ -197,6 +213,7 @@ const MemoListPage: React.FC<MemoListPageProps> = ({ onEditMemo, onCreateNewMemo
                                 <th className="text-left px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Perihal</th>
                                 <th className="text-left px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Kepada</th>
                                 <th className="text-left px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tanggal</th>
+                                <th className="text-left px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                                 <th className="text-right px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Aksi</th>
                             </tr>
                         </thead>
@@ -210,6 +227,18 @@ const MemoListPage: React.FC<MemoListPageProps> = ({ onEditMemo, onCreateNewMemo
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                             {new Date(memo.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                                         </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                memo.status === 'sent_to_foundation' 
+                                                    ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
+                                                    : memo.status === 'final'
+                                                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300'
+                                                    : 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300'
+                                            }`}>
+                                                {memo.status === 'sent_to_foundation' ? 'Dikirim ke Yayasan' : 
+                                                 memo.status === 'final' ? 'Final' : 'Draft'}
+                                            </span>
+                                        </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right">
                                             <div className="flex items-center justify-end gap-2">
                                                 <button
@@ -219,28 +248,39 @@ const MemoListPage: React.FC<MemoListPageProps> = ({ onEditMemo, onCreateNewMemo
                                                 >
                                                     <Edit className="w-4 h-4" />
                                                 </button>
+                                                {memo.status !== 'sent_to_foundation' && (userRole === 'principal' || userRole === 'admin') && (
+                                                    <button
+                                                        onClick={() => handleSendToFoundation(memo.id, memo.memo_number)}
+                                                        className="p-2 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors"
+                                                        title="Kirim ke Yayasan"
+                                                    >
+                                                        <Send className="w-4 h-4" />
+                                                    </button>
+                                                )}
                                                 <button
                                                     onClick={() => handleDuplicateMemo(memo.id)}
-                                                    className="p-2 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors"
+                                                    className="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
                                                     title="Duplikasi Memo"
                                                 >
                                                     <Copy className="w-4 h-4" />
                                                 </button>
-                                                <button
-                                                    onClick={() => handleDeleteMemo(memo.id)}
-                                                    className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                                                    title="Hapus"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
+                                                {(userRole === 'principal' || userRole === 'admin') && memo.status !== 'sent_to_foundation' && (
+                                                    <button
+                                                        onClick={() => handleDeleteMemo(memo.id)}
+                                                        className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                                        title="Hapus"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400 italic">
-                                        Belum ada memo yang dibuat.
+                                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400 italic">
+                                        {userRole === 'foundation' ? 'Belum ada memo yang dikirim ke yayasan.' : 'Belum ada memo yang dibuat.'}
                                     </td>
                                 </tr>
                             )}

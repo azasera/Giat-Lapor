@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, ChevronLeft, Plus, Trash2, Download, FileText, Settings, X, GripVertical, Upload, Image as ImageIcon, ChevronDown, ChevronUp } from 'lucide-react';
+import { Save, ChevronLeft, Plus, Trash2, Download, FileText, Settings, X, GripVertical, Upload, Image as ImageIcon, ChevronDown, ChevronUp, Send } from 'lucide-react';
 import { MemoData, MemoTable } from '../types/memo';
-import { saveMemoToSupabase, supabase, uploadMemoImage } from '../services/supabaseService';
+import { saveMemoToSupabase, supabase, uploadMemoImage, sendMemoToFoundation } from '../services/supabaseService';
 import { showSuccess, showError, showLoading, dismissToast } from '../utils/toast';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -211,6 +211,37 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                 return t;
             })
         }));
+    };
+
+    const handleSendToFoundation = async () => {
+        if (!formData.memo_number || !formData.subject) {
+            showError('Nomor Memo dan Perihal wajib diisi sebelum mengirim ke yayasan.');
+            return;
+        }
+
+        if (!window.confirm('Kirim memo ini ke pihak yayasan? Setelah dikirim, memo tidak dapat diubah lagi.')) {
+            return;
+        }
+
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const loadingToastId = showLoading('Mengirim memo ke yayasan...');
+        setIsSaving(true);
+        try {
+            // Save first if needed
+            const savedMemo = await saveMemoToSupabase(formData, user.id);
+            // Then send to foundation
+            await sendMemoToFoundation(savedMemo.id);
+            showSuccess('Memo berhasil dikirim ke yayasan!');
+            onSaved();
+        } catch (error: any) {
+            console.error('Error sending memo to foundation:', error.message || error);
+            showError(`Gagal mengirim memo ke yayasan: ${error.message || 'Terjadi kesalahan'}`);
+        } finally {
+            dismissToast(loadingToastId);
+            setIsSaving(false);
+        }
     };
 
     const handleSave = async () => {
@@ -466,6 +497,16 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                         <Download className="w-5 h-5" />
                         Preview PDF
                     </button>
+                    {formData.status !== 'sent_to_foundation' && (userRole === 'principal' || userRole === 'admin') && (
+                        <button
+                            onClick={handleSendToFoundation}
+                            disabled={isSaving}
+                            className="flex items-center gap-2 bg-blue-600 text-white font-bold px-4 py-2 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-900/20 disabled:opacity-50"
+                        >
+                            <Send className="w-5 h-5" />
+                            Kirim ke Yayasan
+                        </button>
+                    )}
                     <button
                         onClick={handleSave}
                         disabled={isSaving}

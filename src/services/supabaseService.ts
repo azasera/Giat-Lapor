@@ -1401,7 +1401,11 @@ export const fetchMemos = async (userId: string, userRole: 'principal' | 'founda
 
   if (userRole === 'principal') {
     query = query.eq('user_id', userId);
+  } else if (userRole === 'foundation') {
+    // Foundation can see memos sent to them
+    query = query.eq('status', 'sent_to_foundation');
   }
+  // Admin sees all memos
 
   const { data, error } = await query;
 
@@ -1414,9 +1418,11 @@ export const fetchMemos = async (userId: string, userRole: 'principal' | 'founda
     id: memo.id,
     user_id: memo.user_id,
     memo_number: memo.memo_number,
+    document_title: memo.document_title || 'MEMO INTERNAL',
     subject: memo.subject,
     from: memo.from,
     to: memo.to,
+    show_from_to: memo.show_from_to !== false,
     date: memo.memo_date,
     opening: memo.opening,
     description: memo.description,
@@ -1427,6 +1433,7 @@ export const fetchMemos = async (userId: string, userRole: 'principal' | 'founda
     signature_url: memo.signature_url,
     stamp_url: memo.stamp_url,
     status: memo.status,
+    sent_to_foundation_at: memo.sent_to_foundation_at,
     created_at: memo.created_at,
     updated_at: memo.updated_at,
     tables: (memo.memo_tables || []).sort((a: any, b: any) => a.order_index - b.order_index).map((table: any) => ({
@@ -1567,4 +1574,52 @@ export const uploadMemoImage = async (file: File, path: string): Promise<string>
 export const deleteMemoFromSupabase = async (memoId: string): Promise<void> => {
   const { error } = await supabase.from('memos').delete().eq('id', memoId);
   if (error) throw error;
+};
+
+/**
+ * Sends a memo to foundation by updating its status.
+ * @param memoId The ID of the memo to send.
+ * @returns The updated memo data.
+ */
+export const sendMemoToFoundation = async (memoId: string): Promise<MemoData> => {
+  const { data, error } = await supabase
+    .from('memos')
+    .update({
+      status: 'sent_to_foundation',
+      sent_to_foundation_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', memoId)
+    .select('*, memo_tables(*)')
+    .single();
+
+  if (error) throw error;
+
+  return {
+    id: data.id,
+    user_id: data.user_id,
+    memo_number: data.memo_number,
+    document_title: data.document_title || 'MEMO INTERNAL',
+    subject: data.subject,
+    from: data.from,
+    to: data.to,
+    show_from_to: data.show_from_to !== false,
+    date: data.memo_date,
+    opening: data.opening,
+    description: data.description,
+    signatory_name: data.signatory_name,
+    signatory_role: data.signatory_role,
+    logo_left_url: data.logo_left_url,
+    logo_right_url: data.logo_right_url,
+    signature_url: data.signature_url,
+    stamp_url: data.stamp_url,
+    status: data.status,
+    sent_to_foundation_at: data.sent_to_foundation_at,
+    tables: (data.memo_tables || []).sort((a: any, b: any) => a.order_index - b.order_index).map((table: any) => ({
+      id: table.id,
+      title: table.title,
+      headers: table.headers,
+      rows: table.rows,
+    })),
+  };
 };

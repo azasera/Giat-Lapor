@@ -26,5 +26,6 @@ export interface MemoData {
     stamp_url?: string;
     created_at?: string;
     updated_at?: string;
-    status: 'draft' | 'final';
+    status: 'draft' | 'final' | 'sent_to_foundation';
+    sent_to_foundation_at?: string; // Timestamp when sent to foundation
 }
