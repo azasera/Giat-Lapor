@@ -28,6 +28,7 @@ const MemoListPage: React.FC<MemoListPageProps> = ({ onEditMemo, onCreateNewMemo
         }
 
         console.log(`[MemoListPage] Loading memos for user ${user.id} with role ${userRole}`);
+        console.log(`[MemoListPage] User role type:`, typeof userRole, `Value:`, userRole);
         
         try {
             const fetchedMemos = await fetchMemos(user.id, userRole);
