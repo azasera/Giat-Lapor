@@ -4,6 +4,8 @@ import { MemoData } from '../types/memo';
 import { supabase, fetchMemos, deleteMemoFromSupabase, sendMemoToFoundation } from '../services/supabaseService';
 import { showSuccess, showError, showLoading, dismissToast } from '../utils/toast';
 
+// Feature: Send memo to foundation with role-based access control
+
 interface MemoListPageProps {
     onEditMemo: (memoId: string) => void;
     onCreateNewMemo: () => void;
