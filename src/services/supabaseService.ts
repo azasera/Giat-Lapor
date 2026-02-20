@@ -265,10 +265,9 @@ export const saveReportToSupabase = async (reportData: ReportData, userId: strin
     if (!data || data.length === 0) {
       console.warn(`Report with ID ${id} not found, creating new record instead`);
       // If update failed because record doesn't exist, create new one
-      const { id: _, ...payloadWithoutId } = reportPayload; // Remove id field completely
       const { data: newData, error: insertError } = await supabase
         .from('reports')
-        .insert([payloadWithoutId])
+        .insert([reportPayload])
         .select()
         .single();
 
@@ -281,10 +280,9 @@ export const saveReportToSupabase = async (reportData: ReportData, userId: strin
       savedReport = data[0];
     }
   } else { // New report, insert
-    const { id: _, ...payloadWithoutId } = reportPayload; // Remove id field completely
     const { data, error } = await supabase
       .from('reports')
-      .insert([payloadWithoutId])
+      .insert([reportPayload])
       .select()
       .single();
 
