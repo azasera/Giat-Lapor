@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Edit, Trash2, FileText, RefreshCw, Eye, Search, Copy, Send } from 'lucide-react';
+import { Plus, Edit, Trash2, FileText, RefreshCw, Search, Copy, Send } from 'lucide-react';
 import { MemoData } from '../types/memo';
 import { supabase, fetchMemos, deleteMemoFromSupabase, sendMemoToFoundation } from '../services/supabaseService';
 import { showSuccess, showError, showLoading, dismissToast } from '../utils/toast';
