@@ -368,6 +368,50 @@ function getCategorySpecificSuggestions(category: string, fieldName: string, con
         'Membuat program kerjasama dengan orang tua untuk pembinaan karakter di rumah'
       ]
     },
+    'Pembinaan Karakter PTK': {
+      'goals': [
+        'Meningkatkan integritas dan dedikasi PTK terhadap visi misi pesantren',
+        'Membangun budaya kerja yang Islami dan penuh amanah',
+        'Meningkatkan kedisiplinan dan tanggung jawab PTK dalam bertugas',
+        'Menguatkan ruhiyah dan karakter mulia bagi seluruh ustadz dan staff',
+        'Membentuk teamwork yang solid berlandaskan ukhuwah Islamiyah'
+      ],
+      'results': [
+        'Meningkatnya kesadaran PTK dalam menjalankan tugas sebagai ibadah',
+        'Terwujudnya lingkungan kerja yang harmonis dan religius',
+        'Menurunnya angka ketidakhadiran dan pelanggaran disiplin PTK',
+        'Terlaksananya program pembinaan karakter PTK secara rutin',
+        'Meningkatnya loyalitas dan semangat kerja ustadz dan staff'
+      ],
+      'impact': [
+        'Terciptanya keteladanan yang baik (uswatun hasanah) bagi santri',
+        'Meningkatnya kualitas layanan pendidikan dan pengasuhan',
+        'Terwujudnya pesantren yang memiliki SDM berkarakter kuat',
+        'Meningkatnya kepercayaan wali santri terhadap kualitas pengajar',
+        'Suasana kerja yang lebih berkah dan produktif'
+      ],
+      'challenges': [
+        'Kesibukan rutin yang menghambat kehadiran di program pembinaan',
+        'Perbedaan latar belakang dan tingkat pemahaman PTK',
+        'Kurangnya motivasi internal dari sebagian ustadz atau staff',
+        'Keterbatasan narasumber yang mampu menginspirasi karakter',
+        'Kesulitan dalam mengukur perubahan karakter secara objektif'
+      ],
+      'solutions': [
+        'Menjadwalkan pembinaan di waktu yang paling memungkinkan hadir',
+        'Menggunakan metode pembinaan yang variatif dan tidak membosankan',
+        'Memberikan apresiasi bagi PTK yang menunjukkan perubahan karakter positif',
+        'Menghadirkan tokoh atau murobbi yang menjadi teladan nyata',
+        'Melakukan pendampingan personal dan coaching secara berkala'
+      ],
+      'followUpPlan': [
+        'Melakukan evaluasi berkala terhadap sikap dan perilaku PTK',
+        'Menyusun modul pembinaan karakter PTK yang lebih komprehensif',
+        'Mengadakan mabit atau rihlah untuk penguatan ukhuwah',
+        'Mengintegrasikan penilaian karakter dalam evaluasi kinerja tahunan',
+        'Menetapkan duta karakter di setiap unit sebagai penggerak'
+      ]
+    },
     'Pengembangan SDM Guru / Staff': {
       'goals': [
         'Meningkatkan kompetensi profesional guru dan staff dalam menjalankan tugas',

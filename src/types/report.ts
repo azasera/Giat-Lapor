@@ -66,6 +66,7 @@ export const activityCategories = [
   'Keuangan & Administrasi',
   'Hubungan Masyarakat',
   'Pembinaan Karakter Santri',
+  'Pembinaan Karakter PTK',
   'Ekstrakurikuler',
   'Evaluasi & Monitoring',
   'Program Unggulan Pondok',
