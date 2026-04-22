@@ -645,7 +645,7 @@ const IslamicPrincipalReportApp: React.FC<IslamicPrincipalReportAppProps> = ({ s
                     case 'tahfidz-supervision-view': return 'Lihat Supervisi';
                     case 'tahfidz-supervision-schedule': return 'Jadwal Supervisi';
                     case 'tahfidz-annual-schedule': return 'Program Tahunan';
-                    case 'tahfidz-foundation-reports': return 'Laporan Tahfidz';
+                    case 'tahfidz-foundation-reports': return 'Laporan Supervisi';
                     case 'teachers': return 'Data Guru';
                     case 'teachers-upload': return 'Unggah Data Guru';
                     default: return (currentView as string).split('-').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
@@ -881,7 +881,7 @@ const IslamicPrincipalReportApp: React.FC<IslamicPrincipalReportAppProps> = ({ s
                     }`}
                 >
                   <FileText className={`w-5 h-5 flex-shrink-0 ${currentView === 'tahfidz-foundation-reports' ? 'text-white' : 'group-hover:text-emerald-400'}`} />
-                  <span className="text-sm font-semibold">Laporan Tahfidz Yayasan</span>
+                  <span className="text-sm font-semibold">Laporan Supervisi</span>
                 </button>
               </>
             )}

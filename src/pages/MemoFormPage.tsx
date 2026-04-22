@@ -32,6 +32,8 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
         status: 'draft'
     });
 
+    const isReadOnly = userRole === 'foundation' || (formData?.status === 'sent_to_foundation' && userRole !== 'admin');
+
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [showFromTo, setShowFromTo] = useState(true); // Toggle untuk menampilkan section Dari-Kepada
@@ -507,14 +509,16 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                             Kirim ke Yayasan
                         </button>
                     )}
-                    <button
-                        onClick={handleSave}
-                        disabled={isSaving}
-                        className="flex items-center gap-2 bg-emerald-600 text-white font-bold px-6 py-2 rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-900/20 disabled:opacity-50"
-                    >
-                        <Save className="w-5 h-5" />
-                        {isSaving ? 'Menyimpan...' : 'Simpan Memo'}
-                    </button>
+                    {!isReadOnly && (
+                        <button
+                            onClick={handleSave}
+                            disabled={isSaving}
+                            className="flex items-center gap-2 bg-emerald-600 text-white font-bold px-6 py-2 rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-900/20 disabled:opacity-50"
+                        >
+                            <Save className="w-5 h-5" />
+                            {isSaving ? 'Menyimpan...' : 'Simpan Memo'}
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -543,23 +547,29 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                                             {formData.logo_left_url ? (
                                                 <>
                                                     <img src={formData.logo_left_url} className="w-full h-full object-contain" alt="Logo Kiri" />
-                                                    <button
-                                                        onClick={() => setFormData(p => ({ ...p, logo_left_url: '' }))}
-                                                        className="absolute top-2 right-2 p-1.5 bg-red-100 text-red-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                                                    >
-                                                        <X className="w-4 h-4" />
-                                                    </button>
+                                                    {!isReadOnly && (
+                                                        <button
+                                                            onClick={() => setFormData(p => ({ ...p, logo_left_url: '' }))}
+                                                            className="absolute top-2 right-2 p-1.5 bg-red-100 text-red-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        >
+                                                            <X className="w-4 h-4" />
+                                                        </button>
+                                                    )}
                                                 </>
                                             ) : (
                                                 <>
                                                     <Upload className="w-6 h-6 text-gray-300 mb-2" />
-                                                    <input
-                                                        type="file"
-                                                        accept="image/*"
-                                                        onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], 'logo_left')}
-                                                        className="absolute inset-0 opacity-0 cursor-pointer"
-                                                    />
-                                                    <span className="text-[10px] text-gray-400 font-bold uppercase text-center">Klik untuk Upload</span>
+                                                    {!isReadOnly && (
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], 'logo_left')}
+                                                            className="absolute inset-0 opacity-0 cursor-pointer"
+                                                        />
+                                                    )}
+                                                    <span className="text-[10px] text-gray-400 font-bold uppercase text-center">
+                                                        {isReadOnly ? 'Logo Belum Diatur' : 'Klik untuk Upload'}
+                                                    </span>
                                                 </>
                                             )}
                                         </div>
@@ -570,23 +580,29 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                                             {formData.logo_right_url ? (
                                                 <>
                                                     <img src={formData.logo_right_url} className="w-full h-full object-contain" alt="Logo Kanan" />
-                                                    <button
-                                                        onClick={() => setFormData(p => ({ ...p, logo_right_url: '' }))}
-                                                        className="absolute top-2 right-2 p-1.5 bg-red-100 text-red-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                                                    >
-                                                        <X className="w-4 h-4" />
-                                                    </button>
+                                                    {!isReadOnly && (
+                                                        <button
+                                                            onClick={() => setFormData(p => ({ ...p, logo_right_url: '' }))}
+                                                            className="absolute top-2 right-2 p-1.5 bg-red-100 text-red-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        >
+                                                            <X className="w-4 h-4" />
+                                                        </button>
+                                                    )}
                                                 </>
                                             ) : (
                                                 <>
                                                     <Upload className="w-6 h-6 text-gray-300 mb-2" />
-                                                    <input
-                                                        type="file"
-                                                        accept="image/*"
-                                                        onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], 'logo_right')}
-                                                        className="absolute inset-0 opacity-0 cursor-pointer"
-                                                    />
-                                                    <span className="text-[10px] text-gray-400 font-bold uppercase text-center">Klik untuk Upload</span>
+                                                    {!isReadOnly && (
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], 'logo_right')}
+                                                            className="absolute inset-0 opacity-0 cursor-pointer"
+                                                        />
+                                                    )}
+                                                    <span className="text-[10px] text-gray-400 font-bold uppercase text-center">
+                                                        {isReadOnly ? 'Logo Belum Diatur' : 'Klik untuk Upload'}
+                                                    </span>
                                                 </>
                                             )}
                                         </div>
@@ -616,10 +632,11 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                                         <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Judul Dokumen</label>
                                         <input
                                             type="text"
+                                            readOnly={isReadOnly}
                                             value={formData.document_title}
                                             onChange={(e) => setFormData(prev => ({ ...prev, document_title: e.target.value }))}
                                             placeholder="Contoh: MEMO INTERNAL, SURAT PERINGATAN, SURAT PERNYATAAN, dll"
-                                            className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all font-bold uppercase"
+                                            className={`w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all font-bold uppercase ${isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}`}
                                         />
                                         <p className="text-xs text-gray-400 pl-1 mt-1">Contoh: MEMO INTERNAL, SURAT PERINGATAN, SURAT PERNYATAAN, SURAT PINDAH SEKOLAH</p>
                                     </div>
@@ -628,10 +645,11 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                                         <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Nomor Memo</label>
                                         <input
                                             type="text"
+                                            readOnly={isReadOnly}
                                             value={formData.memo_number}
                                             onChange={(e) => setFormData(prev => ({ ...prev, memo_number: e.target.value }))}
                                             placeholder="Contoh: 61/MEMO/SMPITA/11/2025"
-                                            className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all font-mono"
+                                            className={`w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all font-mono ${isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}`}
                                         />
                                     </div>
 
@@ -639,10 +657,11 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                                         <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Perihal</label>
                                         <input
                                             type="text"
+                                            readOnly={isReadOnly}
                                             value={formData.subject}
                                             onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
                                             placeholder="Contoh: Jam Tambahan Khusus"
-                                            className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all"
+                                            className={`w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all ${isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}`}
                                         />
                                     </div>
 
@@ -651,12 +670,13 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                                             <input
                                                 type="checkbox"
                                                 id="showFromTo"
+                                                disabled={isReadOnly}
                                                 checked={showFromTo}
                                                 onChange={(e) => {
                                                     setShowFromTo(e.target.checked);
                                                     setFormData(prev => ({ ...prev, show_from_to: e.target.checked }));
                                                 }}
-                                                className="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded focus:ring-emerald-500"
+                                                className={`w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded focus:ring-emerald-500 ${isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}`}
                                             />
                                             <label htmlFor="showFromTo" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                                 Tampilkan section "Dari" dan "Kepada"
@@ -671,20 +691,22 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                                                 <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Dari</label>
                                                 <input
                                                     type="text"
+                                                    readOnly={isReadOnly}
                                                     value={formData.from}
                                                     onChange={(e) => setFormData(prev => ({ ...prev, from: e.target.value }))}
                                                     placeholder="Kepala MTA"
-                                                    className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all"
+                                                    className={`w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all ${isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}`}
                                                 />
                                             </div>
                                             <div className="space-y-1">
                                                 <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Kepada</label>
                                                 <input
                                                     type="text"
+                                                    readOnly={isReadOnly}
                                                     value={formData.to}
                                                     onChange={(e) => setFormData(prev => ({ ...prev, to: e.target.value }))}
                                                     placeholder="Bendahara Yayasan"
-                                                    className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all"
+                                                    className={`w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all ${isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}`}
                                                 />
                                             </div>
                                         </>
@@ -694,9 +716,10 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                                         <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Tanggal Memo</label>
                                         <input
                                             type="date"
+                                            readOnly={isReadOnly}
                                             value={formData.date}
                                             onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
-                                            className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all"
+                                            className={`w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all ${isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}`}
                                         />
                                     </div>
 
@@ -704,10 +727,11 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                                         <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Muqodimah (Pembuka)</label>
                                         <textarea
                                             rows={3}
+                                            readOnly={isReadOnly}
                                             value={formData.opening}
                                             onChange={(e) => setFormData(prev => ({ ...prev, opening: e.target.value }))}
                                             placeholder="Semoga Allah selalu memberikan perlindungan kepada kita semua..."
-                                            className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all text-sm"
+                                            className={`w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all text-sm ${isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}`}
                                         />
                                         <p className="text-[10px] text-gray-400 italic font-medium px-1">Kosongkan untuk menggunakan teks standar.</p>
                                     </div>
@@ -727,13 +751,15 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                                 Susunan Tabel
                             </h3>
                             <div className="flex items-center gap-3">
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); handleAddTable(); }}
-                                    className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-2 transition-all border border-emerald-100"
-                                >
-                                    <Plus className="w-3 h-3" />
-                                    Tambah Tabel
-                                </button>
+                                {!isReadOnly && (
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleAddTable(); }}
+                                        className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-2 transition-all border border-emerald-100"
+                                    >
+                                        <Plus className="w-3 h-3" />
+                                        Tambah Tabel
+                                    </button>
+                                )}
                                 {openSections.tables ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
                             </div>
                         </div>
@@ -754,18 +780,21 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                                                 <div className="flex items-center gap-3 flex-1">
                                                     <GripVertical className="text-gray-400 w-4 h-4" />
                                                     <input
+                                                        readOnly={isReadOnly}
                                                         value={table.title}
                                                         onChange={(e) => handleTableChange(table.id, 'title', e.target.value)}
                                                         placeholder="Judul Tabel (Opsional)"
-                                                        className="bg-transparent border-none focus:ring-0 text-sm font-bold text-gray-700 dark:text-white w-full"
+                                                        className={`bg-transparent border-none focus:ring-0 text-sm font-bold text-gray-700 dark:text-white w-full ${isReadOnly ? 'cursor-not-allowed' : ''}`}
                                                     />
                                                 </div>
-                                                <button
-                                                    onClick={() => handleRemoveTable(table.id)}
-                                                    className="text-red-400 hover:text-red-600 p-1 hover:bg-red-50 rounded-lg"
-                                                >
-                                                    <X className="w-5 h-5" />
-                                                </button>
+                                                {!isReadOnly && (
+                                                    <button
+                                                        onClick={() => handleRemoveTable(table.id)}
+                                                        className="text-red-400 hover:text-red-600 p-1 hover:bg-red-50 rounded-lg"
+                                                    >
+                                                        <X className="w-5 h-5" />
+                                                    </button>
+                                                )}
                                             </div>
 
                                             <div className="p-4 space-y-4">
@@ -774,11 +803,12 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                                                     {table.headers.map((h, hIdx) => (
                                                         <div key={hIdx} className="flex-shrink-0 relative group">
                                                             <input
+                                                                readOnly={isReadOnly}
                                                                 value={h}
                                                                 onChange={(e) => handleHeaderChange(table.id, hIdx, e.target.value)}
-                                                                className="bg-emerald-50 dark:bg-emerald-900/30 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg border border-emerald-100 dark:border-emerald-800 focus:ring-1 focus:ring-emerald-500 outline-none min-w-[80px]"
+                                                                className={`bg-emerald-50 dark:bg-emerald-900/30 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg border border-emerald-100 dark:border-emerald-800 focus:ring-1 focus:ring-emerald-500 outline-none min-w-[80px] ${isReadOnly ? 'cursor-not-allowed' : ''}`}
                                                             />
-                                                            {table.headers.length > 1 && (
+                                                            {table.headers.length > 1 && !isReadOnly && (
                                                                 <button
                                                                     onClick={() => handleRemoveColumn(table.id, hIdx)}
                                                                     className="absolute -top-1 -right-1 bg-white text-red-500 rounded-full shadow-md p-0.5 scale-0 group-hover:scale-100 transition-transform"
@@ -788,12 +818,14 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                                                             )}
                                                         </div>
                                                     ))}
-                                                    <button
-                                                        onClick={() => handleAddColumn(table.id)}
-                                                        className="flex-shrink-0 text-emerald-600 p-1 hover:bg-emerald-50 rounded-lg text-xs font-bold"
-                                                    >
-                                                        + Kolom
-                                                    </button>
+                                                    {!isReadOnly && (
+                                                        <button
+                                                            onClick={() => handleAddColumn(table.id)}
+                                                            className="flex-shrink-0 text-emerald-600 p-1 hover:bg-emerald-50 rounded-lg text-xs font-bold"
+                                                        >
+                                                            + Kolom
+                                                        </button>
+                                                    )}
                                                 </div>
 
                                                 {/* Rows Table */}
@@ -817,21 +849,24 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                                                                     {row.map((cell, cIdx) => (
                                                                         <td key={cIdx} className="py-1 px-1">
                                                                             <input
+                                                                                readOnly={isReadOnly}
                                                                                 value={cell}
                                                                                 onChange={(e) => handleRowDataChange(table.id, rIdx, cIdx, e.target.value)}
                                                                                 placeholder="..."
-                                                                                className={`w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none text-gray-700 dark:text-gray-200 py-2 px-3 rounded-lg transition-all text-sm ${cIdx === row.length - 1 && 'rounded-r-none'}`}
+                                                                                className={`w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none text-gray-700 dark:text-gray-200 py-2 px-3 rounded-lg transition-all text-sm ${cIdx === row.length - 1 && 'rounded-r-none'} ${isReadOnly ? 'cursor-not-allowed opacity-80' : ''}`}
                                                                             />
                                                                         </td>
                                                                     ))}
                                                                     <td className="text-right py-1 pr-2 bg-white dark:bg-slate-900 rounded-r-xl border-y border-r border-gray-200 dark:border-slate-700">
-                                                                        <button
-                                                                            onClick={() => handleRemoveRow(table.id, rIdx)}
-                                                                            className="text-gray-300 hover:text-red-500 transition-colors p-1"
-                                                                            title="Hapus Baris"
-                                                                        >
-                                                                            <Trash2 className="w-4 h-4" />
-                                                                        </button>
+                                                                        {!isReadOnly && (
+                                                                            <button
+                                                                                onClick={() => handleRemoveRow(table.id, rIdx)}
+                                                                                className="text-gray-300 hover:text-red-500 transition-colors p-1"
+                                                                                title="Hapus Baris"
+                                                                            >
+                                                                                <Trash2 className="w-4 h-4" />
+                                                                            </button>
+                                                                        )}
                                                                     </td>
                                                                 </tr>
                                                             ))}
@@ -839,13 +874,15 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                                                     </table>
                                                 </div>
 
-                                                <button
-                                                    onClick={() => handleAddRow(table.id)}
-                                                    className="w-full py-2 border-2 border-dashed border-gray-100 dark:border-slate-700 rounded-xl text-gray-400 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50/10 transition-all text-xs font-bold flex items-center justify-center gap-2"
-                                                >
-                                                    <Plus className="w-4 h-4" />
-                                                    Tambah Baris Data
-                                                </button>
+                                                {!isReadOnly && (
+                                                    <button
+                                                        onClick={() => handleAddRow(table.id)}
+                                                        className="w-full py-2 border-2 border-dashed border-gray-100 dark:border-slate-700 rounded-xl text-gray-400 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50/10 transition-all text-xs font-bold flex items-center justify-center gap-2"
+                                                    >
+                                                        <Plus className="w-4 h-4" />
+                                                        Tambah Baris Data
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
@@ -878,23 +915,29 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                                                 {formData.signature_url ? (
                                                     <>
                                                         <img src={formData.signature_url} className="w-full h-full object-contain" alt="Tanda Tangan" />
-                                                        <button
-                                                            onClick={() => setFormData(p => ({ ...p, signature_url: '' }))}
-                                                            className="absolute top-2 right-2 p-1.5 bg-red-100 text-red-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                                                        >
-                                                            <X className="w-4 h-4" />
-                                                        </button>
+                                                        {!isReadOnly && (
+                                                            <button
+                                                                onClick={() => setFormData(p => ({ ...p, signature_url: '' }))}
+                                                                className="absolute top-2 right-2 p-1.5 bg-red-100 text-red-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            >
+                                                                <X className="w-4 h-4" />
+                                                            </button>
+                                                        )}
                                                     </>
                                                 ) : (
                                                     <>
                                                         <Upload className="w-6 h-6 text-gray-300 mb-1" />
-                                                        <input
-                                                            type="file"
-                                                            accept="image/*"
-                                                            onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], 'signature')}
-                                                            className="absolute inset-0 opacity-0 cursor-pointer"
-                                                        />
-                                                        <span className="text-[10px] text-gray-400 font-bold uppercase text-center">Upload Tanda Tangan</span>
+                                                        {!isReadOnly && (
+                                                            <input
+                                                                type="file"
+                                                                accept="image/*"
+                                                                onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], 'signature')}
+                                                                className="absolute inset-0 opacity-0 cursor-pointer"
+                                                            />
+                                                        )}
+                                                        <span className="text-[10px] text-gray-400 font-bold uppercase text-center">
+                                                            {isReadOnly ? 'TTD Belum Diatur' : 'Upload Tanda Tangan'}
+                                                        </span>
                                                     </>
                                                 )}
                                             </div>
@@ -905,23 +948,29 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                                                 {formData.stamp_url ? (
                                                     <>
                                                         <img src={formData.stamp_url} className="w-full h-full object-contain" alt="Stempel" />
-                                                        <button
-                                                            onClick={() => setFormData(p => ({ ...p, stamp_url: '' }))}
-                                                            className="absolute top-2 right-2 p-1.5 bg-red-100 text-red-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                                                        >
-                                                            <X className="w-4 h-4" />
-                                                        </button>
+                                                        {!isReadOnly && (
+                                                            <button
+                                                                onClick={() => setFormData(p => ({ ...p, stamp_url: '' }))}
+                                                                className="absolute top-2 right-2 p-1.5 bg-red-100 text-red-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            >
+                                                                <X className="w-4 h-4" />
+                                                            </button>
+                                                        )}
                                                     </>
                                                 ) : (
                                                     <>
                                                         <Upload className="w-6 h-6 text-gray-300 mb-1" />
-                                                        <input
-                                                            type="file"
-                                                            accept="image/*"
-                                                            onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], 'stamp')}
-                                                            className="absolute inset-0 opacity-0 cursor-pointer"
-                                                        />
-                                                        <span className="text-[10px] text-gray-400 font-bold uppercase text-center">Upload Stempel</span>
+                                                        {!isReadOnly && (
+                                                            <input
+                                                                type="file"
+                                                                accept="image/*"
+                                                                onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], 'stamp')}
+                                                                className="absolute inset-0 opacity-0 cursor-pointer"
+                                                            />
+                                                        )}
+                                                        <span className="text-[10px] text-gray-400 font-bold uppercase text-center">
+                                                            {isReadOnly ? 'Stempel Belum Diatur' : 'Upload Stempel'}
+                                                        </span>
                                                     </>
                                                 )}
                                             </div>
@@ -932,10 +981,11 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                                         <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Keterangan Penutup</label>
                                         <textarea
                                             rows={3}
+                                            readOnly={isReadOnly}
                                             value={formData.description}
                                             onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                                             placeholder="Semoga Allah Subhanahu wa ta’ala memberikan nikmat hidayah..."
-                                            className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all text-sm"
+                                            className={`w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all text-sm ${isReadOnly ? 'cursor-not-allowed opacity-80' : ''}`}
                                         />
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
@@ -943,20 +993,22 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                                             <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Nama Pejabat</label>
                                             <input
                                                 type="text"
+                                                readOnly={isReadOnly}
                                                 value={formData.signatory_name}
                                                 onChange={(e) => setFormData(prev => ({ ...prev, signatory_name: e.target.value }))}
                                                 placeholder="Azali"
-                                                className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all text-sm"
+                                                className={`w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all text-sm ${isReadOnly ? 'cursor-not-allowed opacity-80' : ''}`}
                                             />
                                         </div>
                                         <div className="space-y-1">
                                             <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Jabatan Pejabat</label>
                                             <input
                                                 type="text"
+                                                readOnly={isReadOnly}
                                                 value={formData.signatory_role}
                                                 onChange={(e) => setFormData(prev => ({ ...prev, signatory_role: e.target.value }))}
                                                 placeholder="Kepala MTA At-Tauhid"
-                                                className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all text-sm"
+                                                className={`w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all text-sm ${isReadOnly ? 'cursor-not-allowed opacity-80' : ''}`}
                                             />
                                         </div>
                                     </div>
