@@ -102,6 +102,7 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
     };
 
     const handleAddTable = () => {
+        if (isReadOnly) return;
         const newTable: MemoTable = {
             id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             title: '',
@@ -115,6 +116,7 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
     };
 
     const handleRemoveTable = (id: string) => {
+        if (isReadOnly) return;
         setFormData(prev => ({
             ...prev,
             tables: prev.tables.filter(t => t.id !== id)
@@ -122,6 +124,7 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
     };
 
     const handleTableChange = (id: string, field: keyof MemoTable, value: any) => {
+        if (isReadOnly) return;
         setFormData(prev => ({
             ...prev,
             tables: prev.tables.map(t => t.id === id ? { ...t, [field]: value } : t)
@@ -129,6 +132,7 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
     };
 
     const handleAddRow = (tableId: string) => {
+        if (isReadOnly) return;
         setFormData(prev => ({
             ...prev,
             tables: prev.tables.map(t => {
@@ -142,6 +146,7 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
     };
 
     const handleRemoveRow = (tableId: string, rowIndex: number) => {
+        if (isReadOnly) return;
         setFormData(prev => ({
             ...prev,
             tables: prev.tables.map(t => {
@@ -154,6 +159,7 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
     };
 
     const handleRowDataChange = (tableId: string, rowIndex: number, colIndex: number, value: string) => {
+        if (isReadOnly) return;
         setFormData(prev => ({
             ...prev,
             tables: prev.tables.map(t => {
@@ -169,6 +175,7 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
     };
 
     const handleAddColumn = (tableId: string) => {
+        if (isReadOnly) return;
         setFormData(prev => ({
             ...prev,
             tables: prev.tables.map(t => {
@@ -185,6 +192,7 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
     };
 
     const handleRemoveColumn = (tableId: string, colIndex: number) => {
+        if (isReadOnly) return;
         setFormData(prev => ({
             ...prev,
             tables: prev.tables.map(t => {
@@ -202,6 +210,7 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
     };
 
     const handleHeaderChange = (tableId: string, colIndex: number, value: string) => {
+        if (isReadOnly) return;
         setFormData(prev => ({
             ...prev,
             tables: prev.tables.map(t => {
@@ -216,6 +225,7 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
     };
 
     const handleSendToFoundation = async () => {
+        if (isReadOnly) return;
         if (!formData.memo_number || !formData.subject) {
             showError('Nomor Memo dan Perihal wajib diisi sebelum mengirim ke yayasan.');
             return;
@@ -247,6 +257,7 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
     };
 
     const handleSave = async () => {
+        if (isReadOnly) return;
         if (!formData.memo_number || !formData.subject) {
             showError('Nomor Memo dan Perihal wajib diisi.');
             return;
@@ -271,6 +282,7 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
     };
 
     const handleImageUpload = async (file: File, type: 'logo_left' | 'logo_right' | 'signature' | 'stamp') => {
+        if (isReadOnly) return;
         try {
             const extension = file.name.split('.').pop();
             const fileName = `${type}-${Date.now()}.${extension}`;

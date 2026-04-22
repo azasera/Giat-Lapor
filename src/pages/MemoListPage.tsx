@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Edit, Trash2, FileText, RefreshCw, Search, Copy, Send } from 'lucide-react';
+import { Plus, Edit, Trash2, FileText, RefreshCw, Search, Copy, Send, Eye } from 'lucide-react';
 import { MemoData } from '../types/memo';
 import { supabase, fetchMemos, deleteMemoFromSupabase, sendMemoToFoundation } from '../services/supabaseService';
 import { showSuccess, showError, showLoading, dismissToast } from '../utils/toast';
@@ -255,10 +255,14 @@ const MemoListPage: React.FC<MemoListPageProps> = ({ onEditMemo, onCreateNewMemo
                                             <div className="flex items-center justify-end gap-2">
                                                 <button
                                                     onClick={() => onEditMemo(memo.id)}
-                                                    className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                                                    title="Edit/Lihat"
+                                                    className={`p-2 rounded-lg transition-colors ${
+                                                        memo.status === 'sent_to_foundation' 
+                                                        ? 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20' 
+                                                        : 'text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
+                                                    }`}
+                                                    title={memo.status === 'sent_to_foundation' ? 'Lihat' : 'Edit'}
                                                 >
-                                                    <Edit className="w-4 h-4" />
+                                                    {memo.status === 'sent_to_foundation' ? <Eye className="w-4 h-4" /> : <Edit className="w-4 h-4" />}
                                                 </button>
                                                 {memo.status !== 'sent_to_foundation' && (userRole === 'principal' || userRole === 'admin') && (
                                                     <button
