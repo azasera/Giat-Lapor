@@ -534,9 +534,10 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className={userRole === 'foundation' ? 'flex justify-center pb-10' : 'grid grid-cols-1 lg:grid-cols-12 gap-8'}>
                 {/* Editor Column */}
-                <div className="lg:col-span-7 space-y-6">
+                {userRole !== 'foundation' && (
+                    <div className="lg:col-span-7 space-y-6">
                     {/* logos Section */}
                     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden">
                         <button
@@ -1029,10 +1030,11 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                         )}
                     </div>
                 </div>
+                )}
 
                 {/* Live Preview Column */}
-                <div className="lg:col-span-5 hidden lg:block">
-                    <div className="sticky top-40 bg-white shadow-2xl rounded-sm border border-gray-300 p-8 space-y-4 font-serif text-[#1e293b] overflow-hidden" style={{ minHeight: '800px', transform: 'scale(1)', transformOrigin: 'top center' }}>
+                <div className={userRole === 'foundation' ? 'w-full max-w-4xl' : 'lg:col-span-5 hidden lg:block'}>
+                    <div className={`${userRole === 'foundation' ? 'shadow-2xl' : 'sticky top-40 shadow-2xl'} bg-white rounded-sm border border-gray-300 p-8 md:p-12 space-y-4 font-serif text-[#1e293b] overflow-hidden min-h-[800px] mx-auto`} style={{ transform: 'scale(1)', transformOrigin: 'top center' }}>
                         {/* Virtual Paper Layout */}
                         {/* Kop Surat */}
                         <div className="flex items-center justify-between border-b-4 border-double border-gray-900 pb-2 relative">
