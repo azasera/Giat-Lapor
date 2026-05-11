@@ -6,9 +6,7 @@ import { ArrowLeft, Save, Send, Calendar, FileText, FileSpreadsheet } from 'luci
 import { useNavigate } from 'react-router-dom';
 import { supabase, fetchRABs, saveRealizationToSupabase, submitRealizationToFoundation } from '../services/supabaseService';
 import { showSuccess, showError, showLoading, dismissToast } from '../utils/toast';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
+import { loadPdfTools, loadXLSX } from '../services/dynamicOfficeService';
 
 interface RABRealizationPageProps {
   initialRealizationId?: string;
@@ -242,10 +240,11 @@ const RABRealizationPage: React.FC<RABRealizationPageProps> = ({
     }
   }, [realizationData, onRealizationSaved]);
 
-  const handleDownloadPDF = useCallback(() => {
+  const handleDownloadPDF = useCallback(async () => {
     if (!rabData) return;
     const loadingToastId = showLoading('Membuat PDF...');
     try {
+      const { jsPDF, autoTable } = await loadPdfTools();
       // F4 Size (210 x 330 mm)
       const doc = new jsPDF({
         orientation: 'portrait',
@@ -411,10 +410,11 @@ const RABRealizationPage: React.FC<RABRealizationPageProps> = ({
     }
   }, [rabData, realizationData]);
 
-  const handleDownloadExcel = useCallback(() => {
+  const handleDownloadExcel = useCallback(async () => {
     if (!rabData) return;
     const loadingToastId = showLoading('Membuat Excel...');
     try {
+      const XLSX = await loadXLSX();
       const wb = XLSX.utils.book_new();
 
       const rows: (string | number)[][] = [

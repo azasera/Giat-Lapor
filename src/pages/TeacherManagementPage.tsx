@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Upload, Users, Trash2, Plus, Download, FileSpreadsheet, Edit2 } from 'lucide-react';
 import { supabase } from '../services/supabaseService';
 import { showSuccess, showError, showLoading, dismissToast } from '../utils/toast';
-import * as XLSX from 'xlsx';
+import { loadXLSX } from '../services/dynamicOfficeService';
 
 interface Teacher {
   id: string;
@@ -62,6 +62,7 @@ const TeacherManagementPage: React.FC<TeacherManagementPageProps> = ({ onUpload 
       reader.onload = async (e) => {
         try {
           const data = e.target?.result;
+          const XLSX = await loadXLSX();
           const workbook = XLSX.read(data, { type: 'binary' });
           const sheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[sheetName];
@@ -203,7 +204,7 @@ const TeacherManagementPage: React.FC<TeacherManagementPageProps> = ({ onUpload 
     }
   };
 
-  const downloadTemplate = () => {
+  const downloadTemplate = async () => {
     const template = [
       { 'Nama Guru': 'Ustadz Ahmad', 'Lembaga': 'SDITA' },
       { 'Nama Guru': 'Ustadz Budi', 'Lembaga': 'SMPITA' },
@@ -211,6 +212,7 @@ const TeacherManagementPage: React.FC<TeacherManagementPageProps> = ({ onUpload 
       { 'Nama Guru': 'Ustadz Dedi', 'Lembaga': 'MTA' },
     ];
 
+    const XLSX = await loadXLSX();
     const ws = XLSX.utils.json_to_sheet(template);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Daftar Guru');

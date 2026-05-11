@@ -273,13 +273,15 @@ const MemoListPage: React.FC<MemoListPageProps> = ({ onEditMemo, onCreateNewMemo
                                                         <Send className="w-4 h-4" />
                                                     </button>
                                                 )}
-                                                <button
-                                                    onClick={() => handleDuplicateMemo(memo.id)}
-                                                    className="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
-                                                    title="Duplikasi Memo"
-                                                >
-                                                    <Copy className="w-4 h-4" />
-                                                </button>
+                                                {(userRole === 'principal' || userRole === 'admin') && (
+                                                    <button
+                                                        onClick={() => handleDuplicateMemo(memo.id)}
+                                                        className="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
+                                                        title="Duplikasi Memo"
+                                                    >
+                                                        <Copy className="w-4 h-4" />
+                                                    </button>
+                                                )}
                                                 {(userRole === 'principal' || userRole === 'admin') && memo.status !== 'sent_to_foundation' && (
                                                     <button
                                                         onClick={() => handleDeleteMemo(memo.id)}

@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState } from 'react';
 import { supabase, createProfileForNewUser } from '../services/supabaseService'; // Import createProfileForNewUser
 import { Mail, Lock, LogIn, UserPlus, KeyRound } from 'lucide-react';

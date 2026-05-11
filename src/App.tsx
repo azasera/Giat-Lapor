@@ -1,21 +1,27 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'; // Import useLocation
 import { Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from './services/supabaseService';
-import IslamicPrincipalReportApp from './components/IslamicPrincipalReportApp';
 import AuthForm from './components/AuthForm';
 import ResetPasswordForm from './components/ResetPasswordForm';
-import RABPage from './pages/RABPage'; // Import RABPage
-import ViewReportPage from './pages/ViewReportPage'; // Import ViewReportPage
-import TahfidzSupervisionSchedulePage from './pages/TahfidzSupervisionSchedulePage';
-import TahfidzAnnualSchedulePage from './pages/TahfidzAnnualSchedulePage';
-import TahfidzSupervisionListPage from './pages/TahfidzSupervisionListPage';
-import TahfidzSupervisionFormPage from './pages/TahfidzSupervisionFormPage';
-import TahfidzSupervisionViewPage from './pages/TahfidzSupervisionViewPage';
-import FoundationTahfidzReportPage from './pages/FoundationTahfidzReportPage';
-import TeacherManagementPage from './pages/TeacherManagementPage';
-import TeachersUploadPage from './pages/TeachersUploadPage';
+const IslamicPrincipalReportApp = lazy(() => import('./components/IslamicPrincipalReportApp'));
+const RABPage = lazy(() => import('./pages/RABPage'));
+const ViewReportPage = lazy(() => import('./pages/ViewReportPage'));
+const TahfidzSupervisionSchedulePage = lazy(() => import('./pages/TahfidzSupervisionSchedulePage'));
+const TahfidzAnnualSchedulePage = lazy(() => import('./pages/TahfidzAnnualSchedulePage'));
+const TahfidzSupervisionListPage = lazy(() => import('./pages/TahfidzSupervisionListPage'));
+const TahfidzSupervisionFormPage = lazy(() => import('./pages/TahfidzSupervisionFormPage'));
+const TahfidzSupervisionViewPage = lazy(() => import('./pages/TahfidzSupervisionViewPage'));
+const FoundationTahfidzReportPage = lazy(() => import('./pages/FoundationTahfidzReportPage'));
+const TeacherManagementPage = lazy(() => import('./pages/TeacherManagementPage'));
+const TeachersUploadPage = lazy(() => import('./pages/TeachersUploadPage'));
 
+
+const LoadingFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-emerald-600"></div>
+  </div>
+);
 
 // Component to log current route location
 const RouteLogger = () => {
@@ -24,6 +30,18 @@ const RouteLogger = () => {
     console.log('[App] Current route location:', location.pathname);
   }, [location]);
   return null;
+};
+
+const renderProtected = (Component: any, session: Session | null) => {
+  if (!session) {
+    return <AuthForm onAuthSuccess={() => { }} />;
+  }
+
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <Component />
+    </Suspense>
+  );
 };
 
 function App() {
@@ -110,123 +128,47 @@ function App() {
         />
         <Route
           path="/rab" // New route for RABPage
-          element={
-            !session ? (
-              <AuthForm onAuthSuccess={() => { }} />
-            ) : (
-              <RABPage />
-            )
-          }
+          element={renderProtected(RABPage, session)}
         />
         <Route
           path="/reports/:reportId" // New route for ViewReportPage
-          element={
-            !session ? (
-              <AuthForm onAuthSuccess={() => { }} />
-            ) : (
-              <ViewReportPage />
-            )
-          }
+          element={renderProtected(ViewReportPage, session)}
         />
         <Route
           path="/tahfidz-supervision-schedule"
-          element={
-            !session ? (
-              <AuthForm onAuthSuccess={() => { }} />
-            ) : (
-              <TahfidzSupervisionSchedulePage />
-            )
-          }
+          element={renderProtected(TahfidzSupervisionSchedulePage, session)}
         />
         <Route
           path="/tahfidz-annual-schedule"
-          element={
-            !session ? (
-              <AuthForm onAuthSuccess={() => { }} />
-            ) : (
-              <TahfidzAnnualSchedulePage />
-            )
-          }
+          element={renderProtected(TahfidzAnnualSchedulePage, session)}
         />
         <Route
           path="/teachers"
-          element={
-            !session ? (
-              <AuthForm onAuthSuccess={() => { }} />
-            ) : (
-              <TeacherManagementPage />
-            )
-          }
-        />
-        <Route
-          path="/teachers"
-          element={
-            !session ? (
-              <AuthForm onAuthSuccess={() => { }} />
-            ) : (
-              <TeacherManagementPage />
-            )
-          }
+          element={renderProtected(TeacherManagementPage, session)}
         />
         <Route
           path="/teachers/upload"
-          element={
-            !session ? (
-              <AuthForm onAuthSuccess={() => { }} />
-            ) : (
-              <TeachersUploadPage />
-            )
-          }
+          element={renderProtected(TeachersUploadPage, session)}
         />
         <Route
           path="/tahfidz-supervision"
-          element={
-            !session ? (
-              <AuthForm onAuthSuccess={() => { }} />
-            ) : (
-              <TahfidzSupervisionListPage />
-            )
-          }
+          element={renderProtected(TahfidzSupervisionListPage, session)}
         />
         <Route
           path="/tahfidz-supervision/new"
-          element={
-            !session ? (
-              <AuthForm onAuthSuccess={() => { }} />
-            ) : (
-              <TahfidzSupervisionFormPage />
-            )
-          }
+          element={renderProtected(TahfidzSupervisionFormPage, session)}
         />
         <Route
           path="/tahfidz-supervision/edit/:id"
-          element={
-            !session ? (
-              <AuthForm onAuthSuccess={() => { }} />
-            ) : (
-              <TahfidzSupervisionFormPage />
-            )
-          }
+          element={renderProtected(TahfidzSupervisionFormPage, session)}
         />
         <Route
           path="/tahfidz-supervision/view/:id"
-          element={
-            !session ? (
-              <AuthForm onAuthSuccess={() => { }} />
-            ) : (
-              <TahfidzSupervisionViewPage />
-            )
-          }
+          element={renderProtected(TahfidzSupervisionViewPage, session)}
         />
         <Route
           path="/tahfidz-foundation-reports"
-          element={
-            !session ? (
-              <AuthForm onAuthSuccess={() => { }} />
-            ) : (
-              <FoundationTahfidzReportPage />
-            )
-          }
+          element={renderProtected(FoundationTahfidzReportPage, session)}
         />
         <Route
           path="*"
@@ -239,7 +181,9 @@ function App() {
                 // and trigger a re-render, showing the main app.
               }} />
             ) : (
-              <IslamicPrincipalReportApp session={session} />
+              <Suspense fallback={<LoadingFallback />}>
+                <IslamicPrincipalReportApp session={session} />
+              </Suspense>
             )
           }
         />

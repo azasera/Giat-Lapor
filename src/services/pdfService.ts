@@ -1,5 +1,3 @@
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import { ReportData, DetailedEvaluationItem, reportPeriodOptions, ReportPeriodKey } from '../types/report';
 
 interface PdfServiceProps {
@@ -8,16 +6,22 @@ interface PdfServiceProps {
   getAverageEvaluationScore: (evaluation: { [itemId: string]: number }) => number;
 }
 
+type JsPDFConstructor = typeof import('jspdf').default;
+
+type AutoTableType = typeof import('jspdf-autotable').default;
+
 export class PdfService {
-  private doc: jsPDF;
+  private doc: any;
+  private autoTable: AutoTableType;
   private currentY: number = 20;
   private pageHeight: number = 297; // A4 height in mm (210 x 297)
   private pageWidth: number = 210; // A4 width in mm
   private margin: number = 12;
   private fontSize: number = 8.5;
 
-  constructor() {
-    this.doc = new jsPDF({
+  private constructor(jsPDFConstructor: JsPDFConstructor, autoTable: AutoTableType) {
+    this.autoTable = autoTable;
+    this.doc = new jsPDFConstructor({
       orientation: 'portrait',
       unit: 'mm',
       format: 'a4'
@@ -25,6 +29,15 @@ export class PdfService {
     // Using helvetica with normal style gives a more condensed look
     this.doc.setFont('helvetica', 'normal');
     this.doc.setFontSize(this.fontSize);
+  }
+
+  static async create() {
+    const [{ default: jsPDFConstructor }, { default: autoTable }] = await Promise.all([
+      import('jspdf'),
+      import('jspdf-autotable')
+    ]);
+
+    return new PdfService(jsPDFConstructor, autoTable);
   }
 
   private checkPageBreak(additionalHeight: number = 20): void {
@@ -81,7 +94,7 @@ export class PdfService {
     const tableWidth = this.pageWidth - (this.margin * 2);
     const availableWidth = tableWidth;
 
-    autoTable(this.doc, {
+    this.autoTable(this.doc, {
       startY: this.currentY,
       head: [columns.map((col: any) => col.header)],
       body: data.map(row => columns.map((col: any) => row[col.dataKey] || '')),
@@ -396,8 +409,8 @@ export class PdfService {
   }
 }
 
-export const generateReportPdf = (props: PdfServiceProps, filename?: string): void => {
-  const pdfService = new PdfService();
+export const generateReportPdf = async (props: PdfServiceProps, filename?: string): Promise<void> => {
+  const pdfService = await PdfService.create();
   pdfService.generateReportPdf(props);
   pdfService.downloadPdf(filename);
 };

@@ -3,8 +3,7 @@ import { Save, ChevronLeft, Plus, Trash2, Download, FileText, Settings, X, GripV
 import { MemoData, MemoTable } from '../types/memo';
 import { saveMemoToSupabase, supabase, uploadMemoImage, sendMemoToFoundation } from '../services/supabaseService';
 import { showSuccess, showError, showLoading, dismissToast } from '../utils/toast';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { loadPdfTools } from '../services/dynamicOfficeService';
 
 interface MemoFormPageProps {
     memoId?: string;
@@ -302,6 +301,7 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
     };
 
     const generatePDF = async () => {
+        const { jsPDF, autoTable } = await loadPdfTools();
         const doc = new jsPDF();
         const pageWidth = doc.internal.pageSize.width;
 
@@ -509,7 +509,7 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                         className="flex items-center gap-2 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 font-bold px-4 py-2 rounded-xl border border-gray-200 dark:border-slate-700 hover:bg-gray-50 transition-all shadow-sm"
                     >
                         <Download className="w-5 h-5" />
-                        Preview PDF
+                        Download PDF
                     </button>
                     {formData.status !== 'sent_to_foundation' && (userRole === 'principal' || userRole === 'admin') && (
                         <button

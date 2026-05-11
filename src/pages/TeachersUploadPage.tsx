@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Upload, Download, Users, Trash2, CheckCircle, AlertCircle } from 'lucide-react';
-import * as XLSX from 'xlsx';
 import { supabase } from '../services/supabaseService';
+import { loadXLSX } from '../services/dynamicOfficeService';
 
 interface Teacher {
   name: string;
@@ -22,9 +22,10 @@ const TeachersUploadPage: React.FC<TeachersUploadPageProps> = ({ onSuccess, onCa
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const data = new Uint8Array(event.target?.result as ArrayBuffer);
+        const XLSX = await loadXLSX();
         const workbook = XLSX.read(data, { type: 'array' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
@@ -73,13 +74,14 @@ const TeachersUploadPage: React.FC<TeachersUploadPageProps> = ({ onSuccess, onCa
     }
   };
 
-  const downloadTemplate = () => {
+  const downloadTemplate = async () => {
     const template = [
       { Nama: 'Ustadz Ahmad' },
       { Nama: 'Ustadzah Dewi' },
       { Nama: 'Ustadz Budi' }
     ];
 
+    const XLSX = await loadXLSX();
     const ws = XLSX.utils.json_to_sheet(template);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Template');

@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../services/supabaseService';
 import { Lock, CheckCircle, AlertCircle } from 'lucide-react';

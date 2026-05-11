@@ -7,9 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase, fetchRABs, saveRABToSupabase, deleteRABFromSupabase, submitRABToFoundation, approveRAB, rejectRAB } from '../services/supabaseService'; // Import approveRAB, rejectRAB
 import SignaturePad, { SignaturePadRef } from '../components/SignaturePad'; // Import SignaturePad and its ref type
 import { showSuccess, showError, showLoading, dismissToast } from '../utils/toast'; // Import toast utilities
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
+import { loadPdfTools, loadXLSX } from '../services/dynamicOfficeService';
 
 interface RABPageProps {
   initialRABId?: string;
@@ -367,9 +365,11 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
     }
   }, [rabData, reviewComment, onRABSaved]);
 
-  const handleDownloadPDF_v3 = useCallback(() => {
+  const handleDownloadPDF_v3 = useCallback(async () => {
     const loadingToastId = showLoading('Membuat PDF...');
     try {
+      const { jsPDF, autoTable } = await loadPdfTools();
+
       // Use F4 size (21.0 x 33.0 cm)
       const doc = new jsPDF({
         orientation: 'portrait',
@@ -696,9 +696,10 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
       showError('Gagal membuat PDF. Silakan coba lagi.');
     }
   }, [rabData, totalRoutineExpenses, totalIncidentalExpenses]);
-  const handleDownloadExcel = useCallback(() => {
+  const handleDownloadExcel = useCallback(async () => {
     const loadingToastId = showLoading('Membuat Excel...');
     try {
+      const XLSX = await loadXLSX();
       // Create workbook
       const wb = XLSX.utils.book_new();
 

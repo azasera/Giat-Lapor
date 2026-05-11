@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Download, Plus, Edit2, Trash2, Save, Eye, X, Upload } from 'lucide-react';
-import * as XLSX from 'xlsx';
 import { supabase, fetchUserProfile } from '../services/supabaseService';
+import { loadXLSX } from '../services/dynamicOfficeService';
 
 interface MonthlySchedule {
   month: string;
@@ -245,8 +245,9 @@ const TahfidzAnnualSchedulePage: React.FC<TahfidzAnnualSchedulePageProps> = ({
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
       try {
+        const XLSX = await loadXLSX();
         const bstr = evt.target?.result;
         const wb = XLSX.read(bstr, { type: 'binary' });
         const wsname = wb.SheetNames[0];

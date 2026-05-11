@@ -60,10 +60,10 @@ const ReportsPage: React.FC<ReportsPageProps> = ({
     setSelectedReportForText(null);
   };
 
-  const handleDownloadPdf = (report: ReportData) => {
+  const handleDownloadPdf = async (report: ReportData) => {
     try {
       const filename = `Laporan_${report.principalName.replace(/[^a-zA-Z0-9]/g, '_')}_${report.date}.pdf`;
-      generateReportPdf({
+      await generateReportPdf({
         report,
         allDetailedEvaluationItems,
         getAverageEvaluationScore: getAveragePerformance
