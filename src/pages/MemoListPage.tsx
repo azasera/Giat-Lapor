@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Edit, Trash2, FileText, RefreshCw, Search, Copy, Send, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2, FileText, RefreshCw, Search, Copy, Send, Eye, FileSpreadsheet } from 'lucide-react';
 import { MemoData } from '../types/memo';
 import { supabase, fetchMemos, deleteMemoFromSupabase, sendMemoToFoundation } from '../services/supabaseService';
 import { showSuccess, showError, showLoading, dismissToast } from '../utils/toast';
@@ -159,6 +159,137 @@ const MemoListPage: React.FC<MemoListPageProps> = ({ onEditMemo, onCreateNewMemo
         }
     };
 
+    const handleExportExcel = async (memo: MemoData) => {
+        const loadingToastId = showLoading('Menyiapkan file Excel...');
+        try {
+            const { loadXLSX } = await import('../services/dynamicOfficeService');
+            const XLSX = await loadXLSX();
+            const wb = XLSX.utils.book_new();
+
+            const rows: any[][] = [];
+            
+            // Header / Title
+            rows.push([memo.document_title || 'MEMO INTERNAL']);
+            rows.push([`Nomor: ${memo.memo_number || '-'}`]);
+            rows.push([]);
+
+            // Metadata Dari/Kepada
+            if (memo.show_from_to !== false) {
+                rows.push([`Dari:`, memo.from || '-']);
+                rows.push([`Kepada:`, memo.to || '-']);
+            }
+            rows.push([`Perihal:`, memo.subject || '-']);
+            rows.push([`Tanggal:`, memo.date ? new Date(memo.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-']);
+            rows.push([]);
+
+            // Content
+            if (memo.opening) {
+                rows.push([memo.opening]);
+                rows.push([]);
+            }
+
+            rows.push([`Isi Memo / Keterangan:`]);
+            rows.push([memo.description || '-']);
+            rows.push([]);
+
+            // Tables
+            if (memo.tables && memo.tables.length > 0) {
+                memo.tables.forEach((table) => {
+                    if (table.title) {
+                        rows.push([table.title]);
+                    }
+                    if (table.headers && table.headers.length > 0) {
+                        rows.push(table.headers);
+                    }
+                    if (table.rows && table.rows.length > 0) {
+                        table.rows.forEach(r => {
+                            rows.push(r);
+                        });
+                    }
+                    rows.push([]); // Spacing
+                });
+            }
+
+            // Signatory
+            rows.push([]);
+            rows.push([memo.signatory_role || '']);
+            rows.push([]);
+            rows.push([]);
+            rows.push([memo.signatory_name || '']);
+
+            const ws = XLSX.utils.aoa_to_sheet(rows);
+            
+            // Auto-width adjustment for columns
+            const maxCols = Math.max(...rows.map(r => r.length));
+            const colWidths = Array(maxCols).fill({ wch: 15 });
+            colWidths[0] = { wch: 25 }; // Make first column wider
+            if (colWidths[1]) colWidths[1] = { wch: 40 }; // Make second column wider
+            ws['!cols'] = colWidths;
+
+            XLSX.utils.book_append_sheet(wb, ws, 'Memo Detail');
+
+            const fileName = `Memo-${(memo.memo_number || 'Internal').replace(/\//g, '-')}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+            showSuccess('Excel berhasil diunduh!');
+        } catch (error) {
+            console.error('Error generating Excel:', error);
+            showError('Gagal membuat file Excel.');
+        } finally {
+            dismissToast(loadingToastId);
+        }
+    };
+
+    const handleExportAllExcel = async () => {
+        if (filteredMemos.length === 0) {
+            showError('Tidak ada data memo untuk diekspor.');
+            return;
+        }
+
+        const loadingToastId = showLoading('Mengekspor daftar memo...');
+        try {
+            const { loadXLSX } = await import('../services/dynamicOfficeService');
+            const XLSX = await loadXLSX();
+            const wb = XLSX.utils.book_new();
+
+            const headers = ['Nomor Memo', 'Judul Dokumen', 'Perihal', 'Dari', 'Kepada', 'Tanggal', 'Penandatangan', 'Jabatan', 'Status'];
+            const rows = filteredMemos.map(memo => [
+                memo.memo_number,
+                memo.document_title || 'MEMO INTERNAL',
+                memo.subject,
+                memo.from,
+                memo.to,
+                new Date(memo.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+                memo.signatory_name,
+                memo.signatory_role,
+                memo.status === 'sent_to_foundation' ? 'Dikirim ke Yayasan' : memo.status === 'final' ? 'Final' : 'Draft'
+            ]);
+
+            const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+            
+            const colWidths = [
+                { wch: 25 }, // Nomor Memo
+                { wch: 20 }, // Judul Dokumen
+                { wch: 30 }, // Perihal
+                { wch: 20 }, // Dari
+                { wch: 20 }, // Kepada
+                { wch: 18 }, // Tanggal
+                { wch: 25 }, // Penandatangan
+                { wch: 20 }, // Jabatan
+                { wch: 18 }  // Status
+            ];
+            ws['!cols'] = colWidths;
+
+            XLSX.utils.book_append_sheet(wb, ws, 'Daftar Memo');
+            XLSX.writeFile(wb, 'Daftar_Memo_Internal.xlsx');
+            showSuccess('Daftar memo berhasil diekspor ke Excel!');
+        } catch (error) {
+            console.error('Error exporting all memos to Excel:', error);
+            showError('Gagal mengekspor daftar memo.');
+        } finally {
+            dismissToast(loadingToastId);
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="min-h-[50vh] flex items-center justify-center">
@@ -192,6 +323,14 @@ const MemoListPage: React.FC<MemoListPageProps> = ({ onEditMemo, onCreateNewMemo
                                 title="Refresh"
                             >
                                 <RefreshCw className="w-5 h-5" />
+                            </button>
+                            <button
+                                onClick={handleExportAllExcel}
+                                className="flex items-center gap-2 bg-emerald-50 dark:bg-slate-700 hover:bg-emerald-100 dark:hover:bg-slate-600 text-emerald-700 dark:text-emerald-300 px-4 py-2 rounded-lg font-bold transition-all shadow-md"
+                                title="Ekspor Rekap ke Excel"
+                            >
+                                <FileSpreadsheet className="w-4 h-4" />
+                                Ekspor Excel
                             </button>
                             {(userRole === 'principal' || userRole === 'admin') && (
                                 <button
@@ -263,6 +402,13 @@ const MemoListPage: React.FC<MemoListPageProps> = ({ onEditMemo, onCreateNewMemo
                                                     title={memo.status === 'sent_to_foundation' ? 'Lihat' : 'Edit'}
                                                 >
                                                     {memo.status === 'sent_to_foundation' ? <Eye className="w-4 h-4" /> : <Edit className="w-4 h-4" />}
+                                                </button>
+                                                <button
+                                                    onClick={() => handleExportExcel(memo)}
+                                                    className="p-2 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors"
+                                                    title="Unduh Excel"
+                                                >
+                                                    <FileSpreadsheet className="w-4 h-4" />
                                                 </button>
                                                 {memo.status !== 'sent_to_foundation' && (userRole === 'principal' || userRole === 'admin') && (
                                                     <button

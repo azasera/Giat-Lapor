@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, ChevronLeft, Plus, Trash2, Download, FileText, Settings, X, GripVertical, Upload, Image as ImageIcon, ChevronDown, ChevronUp, Send } from 'lucide-react';
+import { Save, ChevronLeft, Plus, Trash2, Download, FileText, Settings, X, GripVertical, Upload, Image as ImageIcon, ChevronDown, ChevronUp, Send, FileSpreadsheet } from 'lucide-react';
 import { MemoData, MemoTable } from '../types/memo';
 import { saveMemoToSupabase, supabase, uploadMemoImage, sendMemoToFoundation } from '../services/supabaseService';
 import { showSuccess, showError, showLoading, dismissToast } from '../utils/toast';
-import { loadPdfTools } from '../services/dynamicOfficeService';
+import { loadPdfTools, loadXLSX } from '../services/dynamicOfficeService';
 
 interface MemoFormPageProps {
     memoId?: string;
@@ -484,6 +484,85 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
         doc.save(`Memo-${formData.memo_number.replace(/\//g, '-')}.pdf`);
     };
 
+    const generateExcel = async () => {
+        const loadingToastId = showLoading('Menyiapkan file Excel...');
+        try {
+            const XLSX = await loadXLSX();
+            const wb = XLSX.utils.book_new();
+
+            const rows: any[][] = [];
+            
+            // Header / Title
+            rows.push([formData.document_title || 'MEMO INTERNAL']);
+            rows.push([`Nomor: ${formData.memo_number || '-'}`]);
+            rows.push([]);
+
+            // Metadata Dari/Kepada
+            if (formData.show_from_to !== false) {
+                rows.push([`Dari:`, formData.from || '-']);
+                rows.push([`Kepada:`, formData.to || '-']);
+            }
+            rows.push([`Perihal:`, formData.subject || '-']);
+            rows.push([`Tanggal:`, formData.date ? new Date(formData.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-']);
+            rows.push([]);
+
+            // Content
+            if (formData.opening) {
+                rows.push([formData.opening]);
+                rows.push([]);
+            }
+
+            rows.push([`Isi Memo / Keterangan:`]);
+            rows.push([formData.description || '-']);
+            rows.push([]);
+
+            // Tables
+            if (formData.tables && formData.tables.length > 0) {
+                formData.tables.forEach((table) => {
+                    if (table.title) {
+                        rows.push([table.title]);
+                    }
+                    if (table.headers && table.headers.length > 0) {
+                        rows.push(table.headers);
+                    }
+                    if (table.rows && table.rows.length > 0) {
+                        table.rows.forEach(r => {
+                            rows.push(r);
+                        });
+                    }
+                    rows.push([]); // Spacing
+                });
+            }
+
+            // Signatory
+            rows.push([]);
+            rows.push([formData.signatory_role || '']);
+            rows.push([]);
+            rows.push([]);
+            rows.push([formData.signatory_name || '']);
+
+            const ws = XLSX.utils.aoa_to_sheet(rows);
+            
+            // Auto-width adjustment for columns
+            const maxCols = Math.max(...rows.map(r => r.length));
+            const colWidths = Array(maxCols).fill({ wch: 15 });
+            colWidths[0] = { wch: 25 }; // Make first column wider
+            if (colWidths[1]) colWidths[1] = { wch: 40 }; // Make second column wider
+            ws['!cols'] = colWidths;
+
+            XLSX.utils.book_append_sheet(wb, ws, 'Memo Detail');
+
+            const fileName = `Memo-${(formData.memo_number || 'Internal').replace(/\//g, '-')}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+            showSuccess('Excel berhasil diunduh!');
+        } catch (error) {
+            console.error('Error generating Excel:', error);
+            showError('Gagal membuat file Excel.');
+        } finally {
+            dismissToast(loadingToastId);
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="min-h-[50vh] flex items-center justify-center">
@@ -510,6 +589,13 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                     >
                         <Download className="w-5 h-5" />
                         Download PDF
+                    </button>
+                    <button
+                        onClick={generateExcel}
+                        className="flex items-center gap-2 bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 font-bold px-4 py-2 rounded-xl border border-gray-200 dark:border-slate-700 hover:bg-gray-50 transition-all shadow-sm"
+                    >
+                        <FileSpreadsheet className="w-5 h-5" />
+                        Download Excel
                     </button>
                     {formData.status !== 'sent_to_foundation' && (userRole === 'principal' || userRole === 'admin') && (
                         <button
