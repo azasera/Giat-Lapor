@@ -24,6 +24,9 @@ export interface MemoData {
     logo_right_url?: string;
     signature_url?: string;
     stamp_url?: string;
+    mudir_signature_url?: string;
+    mudir_stamp_url?: string;
+    mudir_name?: string;
     created_at?: string;
     updated_at?: string;
     status: 'draft' | 'final' | 'sent_to_foundation';

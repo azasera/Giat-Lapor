@@ -212,10 +212,11 @@ const MemoListPage: React.FC<MemoListPageProps> = ({ onEditMemo, onCreateNewMemo
 
             // Signatory
             rows.push([]);
-            rows.push([memo.signatory_role || '']);
+            rows.push([`Mengetahui,`, ``, ``, ``, `Pangkalpinang, ${memo.date ? new Date(memo.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : ''}`]);
+            rows.push([`Mudir`, ``, ``, ``, memo.signatory_role || '']);
             rows.push([]);
             rows.push([]);
-            rows.push([memo.signatory_name || '']);
+            rows.push([memo.mudir_name || '...................................', ``, ``, ``, memo.signatory_name || '']);
 
             const ws = XLSX.utils.aoa_to_sheet(rows);
             

@@ -28,6 +28,9 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
         description: '',
         signatory_name: '',
         signatory_role: 'Kepala MTA At-Tauhid',
+        mudir_signature_url: '',
+        mudir_stamp_url: '',
+        mudir_name: '',
         status: 'draft'
     });
 
@@ -83,6 +86,9 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                 logo_right_url: data.logo_right_url,
                 signature_url: data.signature_url,
                 stamp_url: data.stamp_url,
+                mudir_signature_url: data.mudir_signature_url || '',
+                mudir_stamp_url: data.mudir_stamp_url || '',
+                mudir_name: data.mudir_name || '',
                 status: data.status,
                 tables: (data.memo_tables || []).sort((a: any, b: any) => a.order_index - b.order_index).map((table: any) => ({
                     id: table.id,
@@ -280,7 +286,7 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
         }
     };
 
-    const handleImageUpload = async (file: File, type: 'logo_left' | 'logo_right' | 'signature' | 'stamp') => {
+    const handleImageUpload = async (file: File, type: 'logo_left' | 'logo_right' | 'signature' | 'stamp' | 'mudir_signature' | 'mudir_stamp') => {
         if (isReadOnly) return;
         try {
             const extension = file.name.split('.').pop();
@@ -461,25 +467,36 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
         }
 
         // Signature & Stamp
-        doc.text(`Pangkalpinang, ${dateFormattedDoc}`, pageWidth - 70, currentY, { align: 'center' });
-        currentY += 6;
-        doc.text(formData.signatory_role, pageWidth - 70, currentY, { align: 'center' });
+        const leftX = 50;
+        const rightX = pageWidth - 70;
+        const sigY = currentY + 11;
 
-        const sigY = currentY + 5;
-        const centerX = pageWidth - 70;
+        // Left Side: Mudir
+        doc.text("Mengetahui,", leftX, currentY, { align: 'center' });
+        doc.text("Mudir", leftX, currentY + 6, { align: 'center' });
+
+        if (formData.mudir_stamp_url) {
+            await addImageFromUrl(formData.mudir_stamp_url, leftX - 25, sigY - 5, 25, 25, true);
+        }
+        if (formData.mudir_signature_url) {
+            await addImageFromUrl(formData.mudir_signature_url, leftX - 15, sigY, 30, 15, true);
+        }
+
+        // Right Side: Signatory
+        doc.text(`Pangkalpinang, ${dateFormattedDoc}`, rightX, currentY, { align: 'center' });
+        doc.text(formData.signatory_role, rightX, currentY + 6, { align: 'center' });
 
         if (formData.stamp_url) {
-            // Place stamp slightly left of center
-            await addImageFromUrl(formData.stamp_url, centerX - 25, sigY - 5, 25, 25, true);
+            await addImageFromUrl(formData.stamp_url, rightX - 25, sigY - 5, 25, 25, true);
         }
         if (formData.signature_url) {
-            // Place signature centered
-            await addImageFromUrl(formData.signature_url, centerX - 15, sigY, 30, 15, true);
+            await addImageFromUrl(formData.signature_url, rightX - 15, sigY, 30, 15, true);
         }
 
-        currentY += 25;
+        currentY += 31;
         doc.setFont('helvetica', 'bold underline');
-        doc.text(formData.signatory_name || '...', pageWidth - 70, currentY, { align: 'center' });
+        doc.text(formData.mudir_name || '...................................', leftX, currentY, { align: 'center' });
+        doc.text(formData.signatory_name || '...', rightX, currentY, { align: 'center' });
 
         doc.save(`Memo-${formData.memo_number.replace(/\//g, '-')}.pdf`);
     };
@@ -536,10 +553,11 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
 
             // Signatory
             rows.push([]);
-            rows.push([formData.signatory_role || '']);
+            rows.push([`Mengetahui,`, ``, ``, ``, `Pangkalpinang, ${formData.date ? new Date(formData.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : ''}`]);
+            rows.push([`Mudir`, ``, ``, ``, formData.signatory_role || '']);
             rows.push([]);
             rows.push([]);
-            rows.push([formData.signatory_name || '']);
+            rows.push([formData.mudir_name || '...................................', ``, ``, ``, formData.signatory_name || '']);
 
             const ws = XLSX.utils.aoa_to_sheet(rows);
             
@@ -1111,6 +1129,89 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                                             />
                                         </div>
                                     </div>
+
+                                    <div className="border-t border-gray-100 dark:border-slate-700 pt-6 mt-6">
+                                        <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-4">Pengesahan Mudir (Kiri)</h4>
+                                        <div className="grid grid-cols-2 gap-6">
+                                            <div className="space-y-3">
+                                                <label className="text-xs font-bold text-gray-500 uppercase">Tanda Tangan Mudir</label>
+                                                <div className="relative group aspect-video rounded-2xl bg-gray-50 dark:bg-slate-900 border-2 border-dashed border-gray-200 dark:border-slate-700 flex flex-col items-center justify-center p-2 overflow-hidden">
+                                                    {formData.mudir_signature_url ? (
+                                                        <>
+                                                            <img src={formData.mudir_signature_url} className="w-full h-full object-contain" alt="Tanda Tangan Mudir" />
+                                                            {!isReadOnly && (
+                                                                <button
+                                                                    onClick={() => setFormData(p => ({ ...p, mudir_signature_url: '' }))}
+                                                                    className="absolute top-2 right-2 p-1.5 bg-red-100 text-red-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                >
+                                                                    <X className="w-4 h-4" />
+                                                                </button>
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Upload className="w-6 h-6 text-gray-300 mb-1" />
+                                                            {!isReadOnly && (
+                                                                <input
+                                                                    type="file"
+                                                                    accept="image/*"
+                                                                    onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], 'mudir_signature')}
+                                                                    className="absolute inset-0 opacity-0 cursor-pointer"
+                                                                />
+                                                            )}
+                                                            <span className="text-[10px] text-gray-400 font-bold uppercase text-center">
+                                                                {isReadOnly ? 'TTD Mudir Belum Diatur' : 'Upload TTD Mudir'}
+                                                            </span>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="space-y-3">
+                                                <label className="text-xs font-bold text-gray-500 uppercase">Stempel Mudir</label>
+                                                <div className="relative group aspect-video rounded-2xl bg-gray-50 dark:bg-slate-900 border-2 border-dashed border-gray-200 dark:border-slate-700 flex flex-col items-center justify-center p-2 overflow-hidden">
+                                                    {formData.mudir_stamp_url ? (
+                                                        <>
+                                                            <img src={formData.mudir_stamp_url} className="w-full h-full object-contain" alt="Stempel Mudir" />
+                                                            {!isReadOnly && (
+                                                                <button
+                                                                    onClick={() => setFormData(p => ({ ...p, mudir_stamp_url: '' }))}
+                                                                    className="absolute top-2 right-2 p-1.5 bg-red-100 text-red-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                >
+                                                                    <X className="w-4 h-4" />
+                                                                </button>
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Upload className="w-6 h-6 text-gray-300 mb-1" />
+                                                            {!isReadOnly && (
+                                                                <input
+                                                                    type="file"
+                                                                    accept="image/*"
+                                                                    onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], 'mudir_stamp')}
+                                                                    className="absolute inset-0 opacity-0 cursor-pointer"
+                                                                />
+                                                            )}
+                                                            <span className="text-[10px] text-gray-400 font-bold uppercase text-center">
+                                                                {isReadOnly ? 'Stempel Mudir Belum Diatur' : 'Upload Stempel Mudir'}
+                                                            </span>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1 mt-4">
+                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Nama Mudir</label>
+                                            <input
+                                                type="text"
+                                                readOnly={isReadOnly}
+                                                value={formData.mudir_name || ''}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, mudir_name: e.target.value }))}
+                                                placeholder="Nama Mudir"
+                                                className={`w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all text-sm ${isReadOnly ? 'cursor-not-allowed opacity-80' : ''}`}
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -1219,13 +1320,32 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                             {formData.description || 'Semoga Allah Subhanahu wa ta’ala memberikan nikmat hidayah untuk senantiasa memperbaiki keikhlasan dalam setiap amalan kita.'}
                         </p>
 
-                        <div className="flex flex-col items-end pt-10">
-                            <div className="text-center space-y-0.5 pr-8 relative min-w-[150px]">
+                        <div className="flex justify-between items-end pt-10 px-8">
+                            {/* Left Side: Mudir */}
+                            <div className="text-center space-y-0.5 relative min-w-[150px]">
+                                <p className="text-[10px] font-bold">Mengetahui,</p>
+                                <p className="text-[10px] font-bold">Mudir</p>
+                                <div className="h-16 flex items-center justify-center relative -my-2">
+                                    {formData.mudir_stamp_url && (
+                                        <img src={formData.mudir_stamp_url} className="absolute left-[48px] top-[-5px] w-14 h-14 object-contain opacity-70 border-none" style={{ mixBlendMode: 'multiply' }} alt="Stempel Mudir" />
+                                    )}
+                                    {formData.mudir_signature_url && (
+                                        <img src={formData.mudir_signature_url} className="w-16 h-10 object-contain relative z-10" style={{ mixBlendMode: 'multiply' }} alt="Signature Mudir" />
+                                    )}
+                                    {!formData.mudir_signature_url && !formData.mudir_stamp_url && (
+                                        <span className="text-[7px] italic text-gray-300">(Stempel & TTD Mudir)</span>
+                                    )}
+                                </div>
+                                <p className="text-[10px] font-bold underline">{formData.mudir_name || '...................................'}</p>
+                            </div>
+
+                            {/* Right Side: Signatory */}
+                            <div className="text-center space-y-0.5 relative min-w-[150px]">
                                 <p className="text-[10px]">Pangkalpinang, {new Date(formData.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                                 <p className="text-[10px] font-bold">{formData.signatory_role}</p>
                                 <div className="h-16 flex items-center justify-center relative -my-2">
                                     {formData.stamp_url && (
-                                        <img src={formData.stamp_url} className="absolute left-[0px] top-[-5px] w-14 h-14 object-contain opacity-70 border-none" style={{ mixBlendMode: 'multiply' }} alt="Stempel" />
+                                        <img src={formData.stamp_url} className="absolute left-[48px] top-[-5px] w-14 h-14 object-contain opacity-70 border-none" style={{ mixBlendMode: 'multiply' }} alt="Stempel" />
                                     )}
                                     {formData.signature_url && (
                                         <img src={formData.signature_url} className="w-16 h-10 object-contain relative z-10" style={{ mixBlendMode: 'multiply' }} alt="Signature" />
