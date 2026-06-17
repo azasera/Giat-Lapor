@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Upload, Download, Users, Trash2, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '../services/supabaseService';
 import { loadXLSX } from '../services/dynamicOfficeService';
+import { ScrollContainer } from '../components/ScrollContainer';
 
 interface Teacher {
   name: string;
@@ -179,7 +180,7 @@ const TeachersUploadPage: React.FC<TeachersUploadPageProps> = ({ onSuccess, onCa
             </div>
 
             <div className="border rounded-lg overflow-hidden">
-              <div className="overflow-x-auto max-h-96">
+              <ScrollContainer className="max-h-96">
                 <table className="w-full">
                   <thead className="bg-gray-50 sticky top-0">
                     <tr>
@@ -196,7 +197,7 @@ const TeachersUploadPage: React.FC<TeachersUploadPageProps> = ({ onSuccess, onCa
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </ScrollContainer>
             </div>
 
             <div className="mt-4 flex justify-end">

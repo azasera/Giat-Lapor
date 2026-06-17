@@ -5,6 +5,7 @@ import { RABRealization } from '../types/realization';
 import { RABData } from '../types/rab';
 import { supabase, fetchRealizations, fetchRABs, deleteRealizationFromSupabase } from '../services/supabaseService';
 import { showSuccess, showError, showLoading, dismissToast } from '../utils/toast';
+import { ScrollContainer } from '../components/ScrollContainer';
 
 interface RABRealizationListPageProps {
   onEditRealization: (realizationId: string) => void;
@@ -157,7 +158,7 @@ const RABRealizationListPage: React.FC<RABRealizationListPageProps> = ({
         )}
 
         {/* Realizations Table */}
-        <div className="overflow-x-auto">
+        <ScrollContainer>
           <table className="w-full min-w-[700px]">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-600">
@@ -255,7 +256,7 @@ const RABRealizationListPage: React.FC<RABRealizationListPageProps> = ({
               Belum ada realisasi tersimpan. Buat realisasi dari RAB yang sudah disetujui!
             </p>
           )}
-        </div>
+        </ScrollContainer>
       </div>
     </div>
   );

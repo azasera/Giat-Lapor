@@ -110,6 +110,96 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Enable global click-and-drag scrolling for overflow-x-auto elements
+  useEffect(() => {
+    let isDown = false;
+    let startX: number;
+    let scrollLeft: number;
+    let activeEl: HTMLElement | null = null;
+
+    const handleMouseDown = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      
+      // Ignore click-and-drag if clicking interactive elements
+      if (
+        ['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON', 'A'].includes(target.tagName) || 
+        target.isContentEditable || 
+        target.closest('button') || 
+        target.closest('a') || 
+        target.closest('input') || 
+        target.closest('select') || 
+        target.closest('textarea')
+      ) {
+        return;
+      }
+
+      const container = target.closest('.overflow-x-auto') as HTMLElement;
+      if (!container) return;
+
+      // Only scroll if container is actually overflowing horizontally
+      if (container.scrollWidth <= container.clientWidth) return;
+
+      isDown = true;
+      activeEl = container;
+      activeEl.style.cursor = 'grabbing';
+      activeEl.style.userSelect = 'none';
+      startX = e.pageX - activeEl.offsetLeft;
+      scrollLeft = activeEl.scrollLeft;
+    };
+
+    const handleMouseLeave = () => {
+      if (!isDown || !activeEl) return;
+      isDown = false;
+      activeEl.style.cursor = 'grab';
+      activeEl.style.removeProperty('user-select');
+      activeEl = null;
+    };
+
+    const handleMouseUp = () => {
+      if (!isDown || !activeEl) return;
+      isDown = false;
+      activeEl.style.cursor = 'grab';
+      activeEl.style.removeProperty('user-select');
+      activeEl = null;
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDown || !activeEl) return;
+      e.preventDefault();
+      const x = e.pageX - activeEl.offsetLeft;
+      const walk = (x - startX) * 1.5;
+      activeEl.scrollLeft = scrollLeft - walk;
+    };
+
+    const handleMouseOver = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const container = target.closest('.overflow-x-auto') as HTMLElement;
+      if (container) {
+        if (container.scrollWidth > container.clientWidth) {
+          if (!isDown) {
+            container.style.cursor = 'grab';
+          }
+        } else {
+          container.style.cursor = '';
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('mouseleave', handleMouseLeave);
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseover', handleMouseOver);
+
+    return () => {
+      document.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('mouseleave', handleMouseLeave);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseover', handleMouseOver);
+    };
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">

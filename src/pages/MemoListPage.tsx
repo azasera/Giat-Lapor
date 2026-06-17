@@ -3,6 +3,7 @@ import { Plus, Edit, Trash2, FileText, RefreshCw, Search, Copy, Send, Eye, FileS
 import { MemoData } from '../types/memo';
 import { supabase, fetchMemos, deleteMemoFromSupabase, sendMemoToFoundation } from '../services/supabaseService';
 import { showSuccess, showError, showLoading, dismissToast } from '../utils/toast';
+import { ScrollContainer } from '../components/ScrollContainer';
 
 // Feature: Send memo to foundation with role-based access control
 
@@ -65,8 +66,9 @@ const MemoListPage: React.FC<MemoListPageProps> = ({ onEditMemo, onCreateNewMemo
             await deleteMemoFromSupabase(memoId);
             showSuccess('Memo berhasil dihapus!');
             loadMemos();
-        } catch (error) {
-            showError('Gagal menghapus memo.');
+        } catch (error: any) {
+            console.error('Error deleting memo:', error);
+            showError(error.message || 'Gagal menghapus memo.');
         } finally {
             dismissToast(loadingToastId);
         }
@@ -357,7 +359,7 @@ const MemoListPage: React.FC<MemoListPageProps> = ({ onEditMemo, onCreateNewMemo
                     </div>
                 </div>
 
-                <div className="overflow-x-auto">
+                <ScrollContainer>
                     <table className="w-full">
                         <thead className="bg-gray-50 dark:bg-gray-900">
                             <tr>
@@ -429,7 +431,7 @@ const MemoListPage: React.FC<MemoListPageProps> = ({ onEditMemo, onCreateNewMemo
                                                         <Copy className="w-4 h-4" />
                                                     </button>
                                                 )}
-                                                {(userRole === 'principal' || userRole === 'admin') && memo.status !== 'sent_to_foundation' && (
+                                                {((userRole === 'principal' && memo.status !== 'sent_to_foundation') || userRole === 'admin') && (
                                                     <button
                                                         onClick={() => handleDeleteMemo(memo.id)}
                                                         className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
@@ -451,7 +453,7 @@ const MemoListPage: React.FC<MemoListPageProps> = ({ onEditMemo, onCreateNewMemo
                             )}
                         </tbody>
                     </table>
-                </div>
+                </ScrollContainer>
             </div>
         </div>
     );

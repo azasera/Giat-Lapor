@@ -5,6 +5,7 @@ import ReportTextContent from '../components/ReportTextContent';
 import FoundationEvaluationDetailModal from '../components/FoundationEvaluationDetailModal'; // Import the new modal component
 import { generateReportPdf } from '../services/pdfService';
 import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { ScrollContainer } from '../components/ScrollContainer';
 
 interface ReportsPageProps {
   reports: ReportData[];
@@ -109,7 +110,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({
           </div>
         </div>
         
-        <div className="overflow-x-auto">
+        <ScrollContainer>
           <table className="w-full min-w-[900px]">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-600">
@@ -217,7 +218,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({
           {reports.length === 0 && (
             <p className="text-gray-500 text-center py-8">Belum ada laporan tersimpan</p>
           )}
-        </div>
+        </ScrollContainer>
       </div>
 
 

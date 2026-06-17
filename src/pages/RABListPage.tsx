@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { RABData } from '../types/rab';
 import { supabase, fetchRABs, deleteRABFromSupabase, submitRABToFoundation } from '../services/supabaseService';
 import { showSuccess, showError, showLoading, dismissToast } from '../utils/toast'; // Import toast utilities
+import { ScrollContainer } from '../components/ScrollContainer';
 
 interface RABListPageProps {
   onEditRAB: (rabId: string) => void;
@@ -140,7 +141,7 @@ const RABListPage: React.FC<RABListPageProps> = ({ onEditRAB, onCreateNewRAB, us
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <ScrollContainer>
           <table className="w-full min-w-[700px]">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-600">
@@ -251,7 +252,7 @@ const RABListPage: React.FC<RABListPageProps> = ({ onEditRAB, onCreateNewRAB, us
           {rabs.length === 0 && (
             <p className="text-gray-500 text-center py-8">Belum ada RAB tersimpan. Buat RAB pertama Anda!</p>
           )}
-        </div>
+        </ScrollContainer>
       </div>
     </div>
   );

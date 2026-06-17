@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, Download, Plus, Edit2, Trash2, Save, Eye, X, Upload } from 'lucide-react';
 import { supabase, fetchUserProfile } from '../services/supabaseService';
 import { loadXLSX } from '../services/dynamicOfficeService';
+import { ScrollContainer } from '../components/ScrollContainer';
 
 interface MonthlySchedule {
   month: string;
@@ -397,8 +398,8 @@ const TahfidzAnnualSchedulePage: React.FC<TahfidzAnnualSchedulePageProps> = ({
       </div>
 
       {/* Schedule Table */}
-      <div className="bg-white rounded-lg shadow overflow-x-auto mb-6 print:shadow-none">
-        <div className="p-6 print:p-4">
+      <div className="bg-white rounded-lg shadow mb-6 print:shadow-none">
+        <ScrollContainer className="p-6 print:p-4">
           <h2 className="text-2xl font-bold text-center mb-6 print:text-xl">JADWAL SUPERVISI</h2>
           <div className="text-center mb-4">
             <div className="inline-block bg-yellow-300 px-6 py-2 font-bold">
@@ -457,7 +458,7 @@ const TahfidzAnnualSchedulePage: React.FC<TahfidzAnnualSchedulePageProps> = ({
               </tr>
             </tbody>
           </table>
-        </div>
+        </ScrollContainer>
       </div>
 
       {/* Saved Schedules */}
@@ -574,7 +575,7 @@ const TahfidzAnnualSchedulePage: React.FC<TahfidzAnnualSchedulePageProps> = ({
 
             {/* Modal Body - Schedule Table */}
             <div className="p-6">
-              <div className="overflow-x-auto">
+              <ScrollContainer>
                 <table className="w-full border-collapse border-2 border-black">
                   <thead>
                     <tr className="bg-gray-100">
@@ -603,7 +604,7 @@ const TahfidzAnnualSchedulePage: React.FC<TahfidzAnnualSchedulePageProps> = ({
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </ScrollContainer>
 
               {/* Summary Info */}
               <div className="mt-6 p-4 bg-gray-50 rounded-lg">

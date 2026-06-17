@@ -1575,12 +1575,27 @@ export const uploadMemoImage = async (file: File, path: string): Promise<string>
   return publicUrl;
 };
 
-/**
- * Deletes a memo.
- */
 export const deleteMemoFromSupabase = async (memoId: string): Promise<void> => {
-  const { error } = await supabase.from('memos').delete().eq('id', memoId);
+  // Hapus detail tabel terlebih dahulu untuk menghindari pelanggaran foreign key
+  const { error: tablesError } = await supabase
+    .from('memo_tables')
+    .delete()
+    .eq('memo_id', memoId);
+  if (tablesError) throw tablesError;
+
+  // Hapus data memo utama dan gunakan .select() untuk memverifikasi apakah ada baris yang terhapus
+  const { data, error } = await supabase
+    .from('memos')
+    .delete()
+    .eq('id', memoId)
+    .select();
+    
   if (error) throw error;
+  
+  // Jika data kosong, berarti RLS memblokir aksi hapus ini (misal kebijakan belum dipasang atau tidak berhak)
+  if (!data || data.length === 0) {
+    throw new Error('Gagal menghapus memo. Pastikan Anda memiliki izin RLS (Row Level Security) untuk menghapus memo ini. Apakah Anda sudah menjalankan script SQL migrasi di dashboard Supabase?');
+  }
 };
 
 /**

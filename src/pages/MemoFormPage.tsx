@@ -4,6 +4,7 @@ import { MemoData, MemoTable } from '../types/memo';
 import { saveMemoToSupabase, supabase, uploadMemoImage, sendMemoToFoundation } from '../services/supabaseService';
 import { showSuccess, showError, showLoading, dismissToast } from '../utils/toast';
 import { loadPdfTools, loadXLSX } from '../services/dynamicOfficeService';
+import { ScrollContainer } from '../components/ScrollContainer';
 
 interface MemoFormPageProps {
     memoId?: string;
@@ -307,18 +308,45 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
     };
 
     const generatePDF = async () => {
-        const { jsPDF, autoTable } = await loadPdfTools();
-        const doc = new jsPDF();
-        const pageWidth = doc.internal.pageSize.width;
+        const loadingToastId = showLoading('Menyiapkan file PDF...');
+        try {
+            const { jsPDF, autoTable } = await loadPdfTools();
+            const doc = new jsPDF();
+            const pageWidth = doc.internal.pageSize.width;
 
-        // Helper function for adding images
-        const addImageFromUrl = async (url: string, x: number, y: number, w: number, h: number, makeTransparent = false) => {
-            return new Promise<void>((resolve) => {
-                const img = new Image();
-                img.crossOrigin = 'anonymous';
-                img.src = url;
-                img.onload = () => {
-                    if (makeTransparent) {
+            // Preload helper
+            const loadImage = (url: string): Promise<HTMLImageElement | null> => {
+                return new Promise((resolve) => {
+                    if (!url || url.trim() === '') {
+                        resolve(null);
+                        return;
+                    }
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.src = url;
+                    img.onload = () => resolve(img);
+                    img.onerror = () => {
+                        console.error('Failed to load image:', url);
+                        resolve(null);
+                    };
+                });
+            };
+
+            // Preload all images concurrently
+            const [imgLogoLeft, imgLogoRight, imgMudirStamp, imgMudirSig, imgStamp, imgSig] = await Promise.all([
+                loadImage(formData.logo_left_url || ''),
+                loadImage(formData.logo_right_url || ''),
+                loadImage(formData.mudir_stamp_url || ''),
+                loadImage(formData.mudir_signature_url || ''),
+                loadImage(formData.stamp_url || ''),
+                loadImage(formData.signature_url || '')
+            ]);
+
+            // Helper function to draw images on PDF
+            const drawImage = (img: HTMLImageElement | null, x: number, y: number, w: number, h: number, makeTransparent = false) => {
+                if (!img) return;
+                if (makeTransparent) {
+                    try {
                         const canvas = document.createElement('canvas');
                         canvas.width = img.width;
                         canvas.height = img.height;
@@ -338,167 +366,159 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                         } else {
                             doc.addImage(img, 'PNG', x, y, w, h);
                         }
-                    } else {
+                    } catch (canvasError) {
+                        console.warn('Canvas rendering error (likely CORS security constraint), falling back to normal drawImage:', canvasError);
                         doc.addImage(img, 'PNG', x, y, w, h);
                     }
-                    resolve();
-                };
-                img.onerror = () => {
-                    console.error('Failed to load image:', url);
-                    resolve();
-                };
-            });
-        };
+                } else {
+                    doc.addImage(img, 'PNG', x, y, w, h);
+                }
+            };
 
-        // Header images
-        if (formData.logo_left_url) {
-            await addImageFromUrl(formData.logo_left_url, 15, 12, 22, 22);
-        }
-        if (formData.logo_right_url) {
-            await addImageFromUrl(formData.logo_right_url, pageWidth - 37, 12, 22, 22);
-        }
+            // Draw header logos
+            drawImage(imgLogoLeft, 15, 12, 22, 22);
+            drawImage(imgLogoRight, pageWidth - 37, 12, 22, 22);
 
-        // Header / Kop Surat (Fixed style)
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
-        doc.text('PONDOK PESANTREN', pageWidth / 2, 15, { align: 'center' });
-        doc.setFontSize(14);
-        doc.text('ISLAMIC CENTRE AT-TAUHID BANGKA BELITUNG', pageWidth / 2, 22, { align: 'center' });
-        doc.setFontSize(12);
-        doc.text("Ma'had Tahfizh Al Qur'an At Tauhid", pageWidth / 2, 28, { align: 'center' });
-        doc.setFontSize(8);
-        doc.setFont('helvetica', 'normal');
-        doc.text('Jl. Gerunggang dalam RT 08 RW 03, Kel. Air Kepala Tujuh, Kec. Gerunggang Kota Pangkalpinang', pageWidth / 2, 33, { align: 'center' });
-        doc.text('Telp. 0852-6868-0049 E-mail : mtaattauhid@gmail.com', pageWidth / 2, 37, { align: 'center' });
+            // Header / Kop Surat (Fixed style)
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'bold');
+            doc.text('PONDOK PESANTREN', pageWidth / 2, 15, { align: 'center' });
+            doc.setFontSize(14);
+            doc.text('ISLAMIC CENTRE AT-TAUHID BANGKA BELITUNG', pageWidth / 2, 22, { align: 'center' });
+            doc.setFontSize(12);
+            doc.text("Ma'had Tahfizh Al Qur'an At Tauhid", pageWidth / 2, 28, { align: 'center' });
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'normal');
+            doc.text('Jl. Gerunggang dalam RT 08 RW 03, Kel. Air Kepala Tujuh, Kec. Gerunggang Kota Pangkalpinang', pageWidth / 2, 33, { align: 'center' });
+            doc.text('Telp. 0852-6868-0049 E-mail : mtaattauhid@gmail.com', pageWidth / 2, 37, { align: 'center' });
 
-        // Double Line Border
-        doc.setLineWidth(0.5);
-        doc.line(15, 40, pageWidth - 15, 40);
-        doc.setLineWidth(0.2);
-        doc.line(15, 41, pageWidth - 15, 41);
+            // Double Line Border
+            doc.setLineWidth(0.5);
+            doc.line(15, 40, pageWidth - 15, 40);
+            doc.setLineWidth(0.2);
+            doc.line(15, 41, pageWidth - 15, 41);
 
-        // Title Section
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'italic');
-        doc.text('Bismillahirrahmanirrahim', pageWidth / 2, 48, { align: 'center' });
+            // Title Section
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'italic');
+            doc.text('Bismillahirrahmanirrahim', pageWidth / 2, 48, { align: 'center' });
 
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'bold');
-        doc.text(formData.document_title || 'MEMO INTERNAL', pageWidth / 2, 55, { align: 'center' });
-        doc.line(pageWidth / 2 - 20, 56, pageWidth / 2 + 20, 56);
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text(formData.document_title || 'MEMO INTERNAL', pageWidth / 2, 55, { align: 'center' });
+            doc.line(pageWidth / 2 - 20, 56, pageWidth / 2 + 20, 56);
 
-        // Meta Info
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        let currentY = 65;
+            // Meta Info
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            let currentY = 65;
 
-        const dateFormattedDoc = new Date(formData.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-        
-        // Format with consistent spacing using fixed positions
-        doc.text('Nomor', 20, currentY);
-        doc.text(': ' + formData.memo_number, 45, currentY);
-        doc.text('Perihal', 20, currentY + 6);
-        doc.text(': ' + formData.subject, 45, currentY + 6);
+            const dateFormattedDoc = new Date(formData.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+            
+            // Format with consistent spacing using fixed positions
+            doc.text('Nomor', 20, currentY);
+            doc.text(': ' + formData.memo_number, 45, currentY);
+            doc.text('Perihal', 20, currentY + 6);
+            doc.text(': ' + formData.subject, 45, currentY + 6);
 
-        currentY += 15;
-        
-        // Only show Dari-Kepada section if enabled
-        if (formData.show_from_to !== false) {
-            doc.setDrawColor(0);
-            doc.rect(20, currentY, pageWidth - 40, 15);
-            doc.text('Dari', 25, currentY + 6);
-            doc.text(': ' + formData.from, 50, currentY + 6);
-            doc.text('Kepada', 25, currentY + 11);
-            doc.text(': ' + formData.to, 50, currentY + 11);
-            currentY += 25;
-        } else {
-            currentY += 10;
-        }
-        
-        const bodyOpening = formData.opening || `Semoga Allah selalu memberikan perlindungan kepada kita semua untuk selalu istiqomah di atas jalan-Nya. Bersama dengan memo ini menyampaikan jam tambahan Guru, Jam mengajar guru sebagai berikut :`;
-        const splitText = doc.splitTextToSize(bodyOpening, pageWidth - 40);
-        doc.text(splitText, 20, currentY);
+            currentY += 15;
+            
+            // Only show Dari-Kepada section if enabled
+            if (formData.show_from_to !== false) {
+                doc.setDrawColor(0);
+                doc.rect(20, currentY, pageWidth - 40, 15);
+                doc.text('Dari', 25, currentY + 6);
+                doc.text(': ' + formData.from, 50, currentY + 6);
+                doc.text('Kepada', 25, currentY + 11);
+                doc.text(': ' + formData.to, 50, currentY + 11);
+                currentY += 25;
+            } else {
+                currentY += 10;
+            }
+            
+            const bodyOpening = formData.opening || `Semoga Allah selalu memberikan perlindungan kepada kita semua untuk selalu istiqomah di atas jalan-Nya. Bersama dengan memo ini menyampaikan jam tambahan Guru, Jam mengajar guru sebagai berikut :`;
+            const splitText = doc.splitTextToSize(bodyOpening, pageWidth - 40);
+            doc.text(splitText, 20, currentY);
 
-        currentY += splitText.length * 5 + 5;
+            currentY += splitText.length * 5 + 5;
 
-        // Render multiple tables
-        for (const table of formData.tables) {
-            if (table.title) {
-                doc.setFont('helvetica', 'bold');
-                doc.text(table.title, pageWidth / 2, currentY, { align: 'center' });
-                currentY += 6;
+            // Render multiple tables
+            for (const table of formData.tables) {
+                if (table.title) {
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(table.title, pageWidth / 2, currentY, { align: 'center' });
+                    currentY += 6;
+                }
+
+                autoTable(doc, {
+                    startY: currentY,
+                    head: [table.headers],
+                    body: table.rows,
+                    theme: 'grid',
+                    headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', lineWidth: 0.1, lineColor: [0, 0, 0] },
+                    styles: { fontSize: 9, cellPadding: 2, textColor: [0, 0, 0], lineColor: [0, 0, 0], lineWidth: 0.1 },
+                    margin: { left: 20, right: 20 }
+                });
+                currentY = (doc as any).lastAutoTable.finalY + 10;
             }
 
-            autoTable(doc, {
-                startY: currentY,
-                head: [table.headers],
-                body: table.rows,
-                theme: 'grid',
-                headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', lineWidth: 0.1, lineColor: [0, 0, 0] },
-                styles: { fontSize: 9, cellPadding: 2, textColor: [0, 0, 0], lineColor: [0, 0, 0], lineWidth: 0.1 },
-                margin: { left: 20, right: 20 }
-            });
-            currentY = (doc as any).lastAutoTable.finalY + 10;
+            // Closing / Description
+            const closingText = formData.description || `Semoga Allah Subhanahu wa ta’ala memberikan nikmat hidayah untuk senantiasa memperbaiki keikhlasan dalam setiap amalan kita.`;
+            const splitClosing = doc.splitTextToSize(closingText, pageWidth - 40);
+            
+            // Check if text contains numbered list (for student data formatting)
+            const hasNumberedList = /^\d+\./.test(closingText.trim());
+            
+            if (hasNumberedList) {
+                // Use monospace font for aligned list
+                doc.setFont('courier', 'normal');
+                const lines = closingText.split('\n');
+                lines.forEach((line) => {
+                    if (line.trim()) {
+                        doc.text(line, 20, currentY);
+                        currentY += 5;
+                    }
+                });
+                doc.setFont('helvetica', 'normal'); // Reset to normal font
+                currentY += 10;
+            } else {
+                // Normal text wrapping
+                doc.text(splitClosing, 20, currentY);
+                currentY += splitClosing.length * 5 + 15;
+            }
+
+            // Signature & Stamp
+            const leftX = 50;
+            const rightX = pageWidth - 70;
+            const sigY = currentY + 11;
+
+            // Left Side: Mudir
+            doc.text("Mengetahui,", leftX, currentY, { align: 'center' });
+            doc.text("Mudir", leftX, currentY + 6, { align: 'center' });
+
+            drawImage(imgMudirStamp, leftX - 25, sigY - 5, 25, 25, true);
+            drawImage(imgMudirSig, leftX - 15, sigY, 30, 15, true);
+
+            // Right Side: Signatory
+            doc.text(`Pangkalpinang, ${dateFormattedDoc}`, rightX, currentY, { align: 'center' });
+            doc.text(formData.signatory_role, rightX, currentY + 6, { align: 'center' });
+
+            drawImage(imgStamp, rightX - 25, sigY - 5, 25, 25, true);
+            drawImage(imgSig, rightX - 15, sigY, 30, 15, true);
+
+            currentY += 31;
+            doc.setFont('helvetica', 'bold underline');
+            doc.text(formData.mudir_name || '...................................', leftX, currentY, { align: 'center' });
+            doc.text(formData.signatory_name || '...', rightX, currentY, { align: 'center' });
+
+            doc.save(`Memo-${formData.memo_number.replace(/\//g, '-')}.pdf`);
+            showSuccess('PDF berhasil diunduh!');
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            showError('Gagal mengunduh PDF. Silakan coba lagi.');
+        } finally {
+            dismissToast(loadingToastId);
         }
-
-        // Closing / Description
-        const closingText = formData.description || `Semoga Allah Subhanahu wa ta’ala memberikan nikmat hidayah untuk senantiasa memperbaiki keikhlasan dalam setiap amalan kita.`;
-        const splitClosing = doc.splitTextToSize(closingText, pageWidth - 40);
-        
-        // Check if text contains numbered list (for student data formatting)
-        const hasNumberedList = /^\d+\./.test(closingText.trim());
-        
-        if (hasNumberedList) {
-            // Use monospace font for aligned list
-            doc.setFont('courier', 'normal');
-            const lines = closingText.split('\n');
-            lines.forEach((line) => {
-                if (line.trim()) {
-                    doc.text(line, 20, currentY);
-                    currentY += 5;
-                }
-            });
-            doc.setFont('helvetica', 'normal'); // Reset to normal font
-            currentY += 10;
-        } else {
-            // Normal text wrapping
-            doc.text(splitClosing, 20, currentY);
-            currentY += splitClosing.length * 5 + 15;
-        }
-
-        // Signature & Stamp
-        const leftX = 50;
-        const rightX = pageWidth - 70;
-        const sigY = currentY + 11;
-
-        // Left Side: Mudir
-        doc.text("Mengetahui,", leftX, currentY, { align: 'center' });
-        doc.text("Mudir", leftX, currentY + 6, { align: 'center' });
-
-        if (formData.mudir_stamp_url) {
-            await addImageFromUrl(formData.mudir_stamp_url, leftX - 25, sigY - 5, 25, 25, true);
-        }
-        if (formData.mudir_signature_url) {
-            await addImageFromUrl(formData.mudir_signature_url, leftX - 15, sigY, 30, 15, true);
-        }
-
-        // Right Side: Signatory
-        doc.text(`Pangkalpinang, ${dateFormattedDoc}`, rightX, currentY, { align: 'center' });
-        doc.text(formData.signatory_role, rightX, currentY + 6, { align: 'center' });
-
-        if (formData.stamp_url) {
-            await addImageFromUrl(formData.stamp_url, rightX - 25, sigY - 5, 25, 25, true);
-        }
-        if (formData.signature_url) {
-            await addImageFromUrl(formData.signature_url, rightX - 15, sigY, 30, 15, true);
-        }
-
-        currentY += 31;
-        doc.setFont('helvetica', 'bold underline');
-        doc.text(formData.mudir_name || '...................................', leftX, currentY, { align: 'center' });
-        doc.text(formData.signatory_name || '...', rightX, currentY, { align: 'center' });
-
-        doc.save(`Memo-${formData.memo_number.replace(/\//g, '-')}.pdf`);
     };
 
     const generateExcel = async () => {
@@ -946,7 +966,7 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                                                 </div>
 
                                                 {/* Rows Table */}
-                                                <div className="overflow-x-auto">
+                                                <ScrollContainer>
                                                     <table className="w-full text-sm border-separate border-spacing-y-2">
                                                         <thead>
                                                             <tr>
@@ -989,7 +1009,7 @@ const MemoFormPage: React.FC<MemoFormPageProps> = ({ memoId, onSaved, onCancel, 
                                                             ))}
                                                         </tbody>
                                                     </table>
-                                                </div>
+                                                </ScrollContainer>
 
                                                 {!isReadOnly && (
                                                     <button

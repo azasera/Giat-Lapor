@@ -1,4 +1,4 @@
-﻿import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import OptimizedInput from '../components/OptimizedInput';
 import OptimizedSelect from '../components/OptimizedSelect';
 import { RABData, defaultRABData, ExpenseItem, sourceOfFundOptions, unitTypeOptions, weekNumberOptions, SourceOfFund, UnitType, WeekNumber } from '../types/rab';
@@ -8,6 +8,7 @@ import { supabase, fetchRABs, saveRABToSupabase, deleteRABFromSupabase, submitRA
 import SignaturePad, { SignaturePadRef } from '../components/SignaturePad'; // Import SignaturePad and its ref type
 import { showSuccess, showError, showLoading, dismissToast } from '../utils/toast'; // Import toast utilities
 import { loadPdfTools, loadXLSX } from '../services/dynamicOfficeService';
+import { ScrollContainer } from '../components/ScrollContainer';
 
 interface RABPageProps {
   initialRABId?: string;
@@ -814,7 +815,7 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
   }, [rabData, totalRoutineExpenses, totalIncidentalExpenses, weeklySummary]);
 
   const renderExpenseTable = (expenses: ExpenseItem[], type: 'routine' | 'incidental') => (
-    <div className="overflow-x-auto mb-4">
+    <ScrollContainer className="mb-4">
       <table className="w-full border-collapse">
         <thead>
           <tr className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs">
@@ -927,7 +928,7 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
           <span>Tambah Baris</span>
         </button>
       )}
-    </div>
+    </ScrollContainer>
   );
 
   if (isLoading) {
@@ -1096,7 +1097,7 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
         </div>
 
         {/* Weekly Budget Summary */}
-        <div className="overflow-x-auto">
+        <ScrollContainer>
           <h3 className="text-md font-semibold mb-2 text-gray-800 dark:text-gray-200">Ringkasan Kebutuhan Dana Per Pekan</h3>
           <table className="w-full border-collapse text-xs">
             <thead>
@@ -1122,7 +1123,7 @@ const RABPage: React.FC<RABPageProps> = ({ initialRABId, onRABSaved, userRole = 
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollContainer>
       </div>
 
       {/* Belanja Rutin */}

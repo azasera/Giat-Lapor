@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase, fetchRABs, saveRealizationToSupabase, submitRealizationToFoundation } from '../services/supabaseService';
 import { showSuccess, showError, showLoading, dismissToast } from '../utils/toast';
 import { loadPdfTools, loadXLSX } from '../services/dynamicOfficeService';
+import { ScrollContainer } from '../components/ScrollContainer';
 
 interface RABRealizationPageProps {
   initialRealizationId?: string;
@@ -610,7 +611,7 @@ const RABRealizationPage: React.FC<RABRealizationPageProps> = ({
       </div>
 
       {/* Realization Items Table */}
-      <div className="overflow-x-auto mb-6">
+      <ScrollContainer className="mb-6">
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs">
@@ -670,7 +671,7 @@ const RABRealizationPage: React.FC<RABRealizationPageProps> = ({
             })}
           </tbody>
         </table>
-      </div>
+      </ScrollContainer>
 
       {/* Action Buttons */}
       {isEditingAllowed && (

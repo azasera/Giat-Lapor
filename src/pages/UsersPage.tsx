@@ -3,6 +3,7 @@ import { Users, Search, Shield, UserCheck, Building2, Calendar } from 'lucide-re
 import { fetchAllProfiles, updateUserRole } from '../services/supabaseService';
 import { showError, showLoading, dismissToast, showSuccess } from '../utils/toast';
 import { Edit2, Save, X as CloseIcon } from 'lucide-react';
+import { ScrollContainer } from '../components/ScrollContainer';
 
 interface UserProfile {
   id: string;
@@ -272,7 +273,7 @@ const UsersPage: React.FC = () => {
 
       {/* Users Table */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="overflow-x-auto">
+        <ScrollContainer>
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-900">
               <tr>
@@ -382,7 +383,7 @@ const UsersPage: React.FC = () => {
               )}
             </tbody>
           </table>
-        </div>
+        </ScrollContainer>
       </div>
 
       {/* Summary */}
